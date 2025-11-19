@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthGate } from '@/components/auth-gate';
+import { ChatbotWidget } from '@/components/chatbot-widget';
 
 export const metadata: Metadata = {
   title: 'Tech Learnings - Your Universe of Learning',
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           <AuthGate>{children}</AuthGate>
+          <ChatbotWidget />
           <Toaster />
         </FirebaseClientProvider>
       </body>

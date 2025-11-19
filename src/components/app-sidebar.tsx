@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Home, BookOpen, Sparkles, Radio, Star, Bot } from 'lucide-react';
+import { Home, BookOpen, Sparkles, Radio, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,10 +34,6 @@ export function AppSidebar() {
             <NavLink href="/recommendations">
               <Sparkles className="h-4 w-4" />
               For You
-            </NavLink>
-             <NavLink href="/chatbot">
-              <Bot className="h-4 w-4" />
-              Chatbot
             </NavLink>
             <NavLink href="/go-live">
               <Radio className="h-4 w-4" />

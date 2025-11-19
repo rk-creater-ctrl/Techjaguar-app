@@ -6,7 +6,6 @@ import {
   Radio,
   Search,
   PanelLeft,
-  Bot,
 } from 'lucide-react';
 import {
   Sheet,
@@ -15,14 +14,6 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { UserNav } from '@/components/user-nav';
 import { TechLearningsLogo } from '@/components/icons';
 
@@ -65,13 +56,6 @@ export function AppHeader() {
             >
               <Sparkles className="h-5 w-5" />
               For You
-            </Link>
-             <Link
-              href="/chatbot"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Bot className="h-5 w-5" />
-              Chatbot
             </Link>
             <Link
               href="/go-live"
