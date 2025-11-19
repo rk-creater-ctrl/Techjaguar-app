@@ -2,9 +2,15 @@ import { getCourseBySlug } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Lock, PlayCircle } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default async function CourseDetailPage({
   params,
@@ -96,7 +102,7 @@ export default async function CourseDetailPage({
             <CardContent>
               <div className="flex items-center gap-4">
                  <Avatar className="h-12 w-12">
-                   <AvatarImage src={`https://i.pravatar.cc/150?u=${course.author}`} />
+                   <AvatarImage src={`https://i.pravatar.cc/150?u=${course.author}`} alt={course.author} />
                    <AvatarFallback>{course.author.charAt(0)}</AvatarFallback>
                  </Avatar>
                  <p className="font-medium">{course.author}</p>
@@ -107,15 +113,4 @@ export default async function CourseDetailPage({
       </div>
     </div>
   );
-}
-
-// Dummy components to avoid breaking the build.
-function Avatar({children, className}: {children: React.ReactNode, className?: string}) {
-  return <div className={className}>{children}</div>
-}
-function AvatarImage({src, alt}: {src: string, alt: string}) {
-  return <img src={src} alt={alt} className="rounded-full" />
-}
-function AvatarFallback({children}: {children: React.ReactNode}) {
-  return <div>{children}</div>
 }
