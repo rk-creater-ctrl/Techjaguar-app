@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { getRecommendationsAction, type FormState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/course-card';
-import type { Course } from '@/lib/data';
+import { getCourses, type Course } from '@/lib/data';
+import { useFirestore } from '@/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface RecommendationsFormProps {
-  courses: { value: string; label: string }[];
+interface CourseOption {
+  value: string;
+  label: string;
 }
 
 const formSchema = z.object({
@@ -33,11 +36,34 @@ const formSchema = z.object({
   userPreferences: z.string(),
 });
 
-export function RecommendationsForm({ courses }: RecommendationsFormProps) {
+export function RecommendationsForm() {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(
     getRecommendationsAction,
     { message: '' }
   );
+
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (!firestore) return;
+      setLoading(true);
+      const fetchedCourses = await getCourses(firestore);
+      setCourses(fetchedCourses);
+      setCourseOptions(
+        fetchedCourses.map((course) => ({
+          value: course.id,
+          label: course.title,
+        }))
+      );
+      setLoading(false);
+    };
+
+    fetchCourses();
+  }, [firestore]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,21 +80,50 @@ export function RecommendationsForm({ courses }: RecommendationsFormProps) {
     }
   }, [state, form]);
 
+  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+    evt.preventDefault();
+    const formData = new FormData(evt.currentTarget);
+    // Append the full courses list to the form data for the server action
+    formData.append('allCourses', JSON.stringify(courses));
+    form.trigger().then((isValid) => {
+      if (isValid) {
+        formAction(formData);
+      }
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+             <Skeleton className="h-8 w-1/2" />
+             <Skeleton className="h-4 w-3/4" />
+            <div className="grid grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-3">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+             <Skeleton className="h-8 w-1/3 mt-4" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+         <Skeleton className="h-10 w-48" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <Form {...form}>
-        <form
-          onSubmit={(evt) => {
-            evt.preventDefault();
-            const formData = new FormData(evt.currentTarget);
-            form.trigger().then((isValid) => {
-              if (isValid) {
-                formAction(formData);
-              }
-            });
-          }}
-          className="space-y-8"
-        >
+        <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <FormField
@@ -85,7 +140,7 @@ export function RecommendationsForm({ courses }: RecommendationsFormProps) {
                       </FormDescription>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      {courses.map((course) => (
+                      {courseOptions.map((course) => (
                         <FormField
                           key={course.value}
                           control={form.control}

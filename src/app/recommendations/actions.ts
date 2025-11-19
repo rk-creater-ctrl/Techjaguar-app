@@ -12,6 +12,7 @@ const schema = z.object({
   learningHistory: z.array(z.string()),
   interests: z.string().min(1, 'Please enter at least one interest.'),
   userPreferences: z.string(),
+  allCourses: z.any(), // We will pass the courses from the client
 });
 
 export type FormState = {
@@ -25,10 +26,14 @@ export async function getRecommendationsAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  // The courses are now passed as a stringified JSON from the client
+  const allCourses = JSON.parse(formData.get('allCourses') as string || '[]');
+
   const validatedFields = schema.safeParse({
     learningHistory: formData.getAll('learningHistory'),
     interests: formData.get('interests'),
     userPreferences: formData.get('userPreferences'),
+    allCourses: allCourses,
   });
 
   if (!validatedFields.success) {
@@ -44,10 +49,8 @@ export async function getRecommendationsAction(
   }
 
   try {
-    const { firestore } = initializeFirebase();
-    const allCourses = await getCourses(firestore);
     const learningHistoryTitles = validatedFields.data.learningHistory.map(courseId => {
-        const course = allCourses.find(c => c.id === courseId);
+        const course = allCourses.find((c: any) => c.id === courseId);
         return course ? course.title : courseId;
     });
 
@@ -58,7 +61,7 @@ export async function getRecommendationsAction(
     
     // Enrich with full course data
     const recommendedCoursesData = result.recommendedCourses.map(title => {
-        const found = allCourses.find(c => c.title.toLowerCase() === title.toLowerCase());
+        const found = allCourses.find((c: any) => c.title.toLowerCase() === title.toLowerCase());
         return found || { id: title, title, slug: '#', description: 'Could not find details for this course.', author: 'N/A', progress: 0, isFree: true, lectures: [] };
     });
 
