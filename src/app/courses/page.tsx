@@ -1,6 +1,9 @@
 import { CourseCard } from '@/components/course-card';
 import { getCourses } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { PlusCircle } from 'lucide-react';
 
 export default async function CoursesPage() {
   const courses = await getCourses();
@@ -17,6 +20,14 @@ export default async function CoursesPage() {
           <p className="text-muted-foreground">
             Find your next learning adventure from our extensive catalog.
           </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Link href="/courses/new">
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Course
+            </Button>
+          </Link>
         </div>
       </div>
       <Tabs defaultValue="all" className="w-full">
