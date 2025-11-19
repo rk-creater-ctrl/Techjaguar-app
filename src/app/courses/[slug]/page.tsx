@@ -1,4 +1,6 @@
-import { getCourseBySlug } from '@/lib/data';
+'use client';
+
+import { getCourseBySlug, type Course } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -9,26 +11,54 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, PlayCircle } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { useFirestore } from '@/firebase';
+import { useEffect, useState } from 'react';
 
-export default async function CourseDetailPage({
+export default function CourseDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const course = await getCourseBySlug(params.slug);
+  const firestore = useFirestore();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!course) {
-    notFound();
+  useEffect(() => {
+    const fetchCourse = async () => {
+      setLoading(true);
+      const fetchedCourse = await getCourseBySlug(firestore, params.slug);
+      if (fetchedCourse) {
+        setCourse(fetchedCourse);
+      } else {
+        notFound();
+      }
+      setLoading(false);
+    };
+
+    if (firestore) {
+      fetchCourse();
+    }
+  }, [firestore, params.slug]);
+
+  if (loading || !course) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto grid max-w-6xl flex-1 auto-rows-max gap-4">
       <div className="flex items-center gap-4">
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0 font-headline">
-          <Link href="/courses" className="text-muted-foreground hover:underline">
+          <Link
+            href="/courses"
+            className="text-muted-foreground hover:underline"
+          >
             Courses
           </Link>
           <span className="mx-2 text-muted-foreground">/</span>
@@ -58,7 +88,9 @@ export default async function CourseDetailPage({
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <h2 className="text-2xl font-semibold font-headline">Description</h2>
+                  <h2 className="text-2xl font-semibold font-headline">
+                    Description
+                  </h2>
                   <p className="text-muted-foreground">{course.description}</p>
                 </div>
               </div>
@@ -66,9 +98,11 @@ export default async function CourseDetailPage({
           </Card>
           <Card>
             <CardContent className="pt-6">
-               <h2 className="text-2xl font-semibold font-headline mb-4">Lectures</h2>
+              <h2 className="text-2xl font-semibold font-headline mb-4">
+                Lectures
+              </h2>
                <ul className="space-y-2">
-                {course.lectures.map((lecture, index) => (
+                {course.lectures.length > 0 ? course.lectures.map((lecture, index) => (
                   <li key={lecture.id} className="flex items-center justify-between rounded-lg border bg-card-foreground/5 p-4">
                     <div className="flex items-center gap-4">
                       {lecture.isFree || course.isFree ? (
@@ -78,12 +112,14 @@ export default async function CourseDetailPage({
                       )}
                       <div className="flex flex-col">
                         <span className="font-medium">{lecture.title}</span>
-                        <span className="text-sm text-muted-foreground">{lecture.duration}</span>
+                        <span className="text-sm text-muted-foreground">{lecture.duration} mins</span>
                       </div>
                     </div>
                     {index < 2 && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </li>
-                ))}
+                )) : (
+                  <p className="text-muted-foreground">No lectures available yet.</p>
+                )}
                </ul>
             </CardContent>
           </Card>
@@ -96,7 +132,9 @@ export default async function CourseDetailPage({
             <CardContent>
               <div className="grid gap-4">
                 <Progress value={course.progress} className="h-3" />
-                <p className="text-sm text-muted-foreground">{course.progress}% of course completed</p>
+                <p className="text-sm text-muted-foreground">
+                  {course.progress}% of course completed
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -106,11 +144,14 @@ export default async function CourseDetailPage({
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
-                 <Avatar className="h-12 w-12">
-                   <AvatarImage src={`https://i.pravatar.cc/150?u=${course.author}`} alt={course.author} />
-                   <AvatarFallback>{course.author.charAt(0)}</AvatarFallback>
-                 </Avatar>
-                 <p className="font-medium">{course.author}</p>
+                <Avatar className="h-12 w-12">
+                  <AvatarImage
+                    src={`https://i.pravatar.cc/150?u=${course.instructorId}`}
+                    alt={course.author}
+                  />
+                  <AvatarFallback>{course.author.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-medium">{course.author}</p>
               </div>
             </CardContent>
           </Card>

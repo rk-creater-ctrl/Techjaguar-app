@@ -18,13 +18,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { createCourse } from '@/lib/actions';
+import { v4 as uuidv4 } from 'uuid';
 
 const courseSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(20, 'Description must be at least 20 characters.'),
   price: z.coerce.number().min(0, 'Price cannot be negative.'),
   isFree: z.boolean().default(false),
-  imageUrl: z.string().url('Please enter a valid image URL.'),
+  imageId: z.string({
+    required_error: 'Please select an image.',
+  }),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -32,6 +45,8 @@ type CourseFormValues = z.infer<typeof courseSchema>;
 export function CreateCourseForm() {
   const { toast } = useToast();
   const router = useRouter();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
@@ -40,21 +55,43 @@ export function CreateCourseForm() {
       description: '',
       price: 0,
       isFree: false,
-      imageUrl: '',
     },
   });
-  
+
   const isFree = form.watch('isFree');
 
   const onSubmit = async (data: CourseFormValues) => {
-    // This is where we will add the server action to save the data
-    console.log(data);
-    toast({
-      title: 'Course Created (Simulated)',
-      description: 'The course has been created successfully (simulation).',
-    });
-    // For now, let's just log it and navigate away
-    router.push('/courses');
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You must be logged in to create a course.',
+        });
+        return;
+    }
+    
+    try {
+      await createCourse(firestore, {
+        ...data,
+        id: uuidv4(),
+        instructorId: user.uid,
+        categoryId: 'general', // Placeholder
+        author: user.displayName || 'Unnamed Instructor',
+      });
+
+      toast({
+        title: 'Course Created',
+        description: 'The course has been created successfully.',
+      });
+      router.push('/courses');
+      router.refresh(); // Refresh the page to show the new course
+    } catch (error: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: error.message || 'Could not create course.',
+      });
+    }
   };
 
   return (
@@ -67,7 +104,10 @@ export function CreateCourseForm() {
             <FormItem>
               <FormLabel>Course Title</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Introduction to Next.js 14" {...field} />
+                <Input
+                  placeholder="e.g., Introduction to Next.js 14"
+                  {...field}
+                />
               </FormControl>
               <FormDescription>
                 A catchy and descriptive title for your course.
@@ -93,17 +133,29 @@ export function CreateCourseForm() {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
-          name="imageUrl"
+          name="imageId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/course-image.png" {...field} />
-              </FormControl>
+              <FormLabel>Cover Image</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a cover image" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {PlaceHolderImages.map((image) => (
+                    <SelectItem key={image.id} value={image.id}>
+                      {image.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormDescription>
-                A URL for the course's cover image.
+                Choose an image that represents your course.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -111,44 +163,49 @@ export function CreateCourseForm() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField
+          <FormField
             control={form.control}
             name="isFree"
             render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                    <FormLabel>Free Course</FormLabel>
-                    <FormDescription>
+                  <FormLabel>Free Course</FormLabel>
+                  <FormDescription>
                     Is this course available for free?
-                    </FormDescription>
+                  </FormDescription>
                 </div>
                 <FormControl>
-                    <Switch
+                  <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
-                    />
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                      if (checked) {
+                        form.setValue('price', 0);
+                      }
+                    }}
+                  />
                 </FormControl>
-                </FormItem>
+              </FormItem>
             )}
-            />
-            {!isFree && (
+          />
+          {!isFree && (
             <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
+              control={form.control}
+              name="price"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
+                  <FormLabel>Price</FormLabel>
+                  <FormControl>
                     <Input type="number" placeholder="e.g., 49.99" {...field} />
-                    </FormControl>
-                    <FormDescription>
+                  </FormControl>
+                  <FormDescription>
                     Set the price for your course in USD.
-                    </FormDescription>
-                    <FormMessage />
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
-            )}
+          )}
         </div>
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
