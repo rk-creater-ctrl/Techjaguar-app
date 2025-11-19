@@ -5,21 +5,19 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 export async function createCourse(firestore: Firestore, courseData: Course) {
-  const courseRef = doc(collection(firestore, 'courses'), courseData.id);
-  
-  // Use a non-blocking write with error handling
-  setDoc(courseRef, courseData)
-    .catch(error => {
-      // Create a rich, contextual error and emit it globally
-      const permissionError = new FirestorePermissionError({
-        path: courseRef.path,
-        operation: 'create',
-        requestResourceData: courseData,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-
-      // Also, re-throw the original error if you want the promise to reject
-      // This allows the calling UI to handle the error state locally if needed
-      throw error; 
+  try {
+    const courseRef = doc(firestore, 'courses', courseData.id);
+    await setDoc(courseRef, courseData);
+  } catch (error: any) {
+    // Create a rich, contextual error. In a server action, we can't emit
+    // to the client-side emitter, so we'll re-throw a more informative error.
+    const permissionError = new FirestorePermissionError({
+      path: `courses/${courseData.id}`,
+      operation: 'create',
+      requestResourceData: courseData,
     });
+    
+    // We're throwing the custom error so the UI can catch and display it.
+    throw permissionError;
+  }
 }
