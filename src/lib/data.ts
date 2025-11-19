@@ -17,9 +17,20 @@ export interface Course {
   progress: number; // 0-100
   imageId: string;
   lectures: Lecture[];
+  imageUrl?: string;
+  imageHint?: string;
 }
 
-const courses: Course[] = [
+export interface Subscription {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'inactive' | 'cancelled';
+}
+
+
+const courses: Omit<Course, 'imageUrl' | 'imageHint'>[] = [
   {
     id: '1',
     title: 'Introduction to Web Development',
@@ -118,7 +129,7 @@ const courses: Course[] = [
 ];
 
 // Add image URLs to courses
-const coursesWithImages = courses.map(course => {
+const coursesWithImages: Course[] = courses.map(course => {
   const image = PlaceHolderImages.find(img => img.id === course.imageId);
   return {
     ...course,
@@ -126,6 +137,16 @@ const coursesWithImages = courses.map(course => {
     imageHint: image?.imageHint,
   };
 });
+
+const subscriptions: Subscription[] = [
+    {
+        id: 'sub_1',
+        userId: 'defaultUser', // This will be the mock user ID.
+        startDate: '2023-01-15T00:00:00Z',
+        endDate: '2024-01-15T00:00:00Z',
+        status: 'active',
+    }
+]
 
 export const getCourses = async (): Promise<Course[]> => {
   // Simulate API delay
@@ -138,3 +159,11 @@ export const getCourseBySlug = async (slug: string): Promise<Course | undefined>
   await new Promise(resolve => setTimeout(resolve, 500));
   return coursesWithImages.find(course => course.slug === slug);
 };
+
+export const getSubscriptionByUserId = async (userId: string): Promise<Subscription | undefined> => {
+    // In a real app, you would fetch this from Firestore.
+    // For now, we'll simulate it with a mock user.
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const userSub = subscriptions.find(s => s.userId === 'defaultUser' || s.userId === userId);
+    return userSub;
+}
