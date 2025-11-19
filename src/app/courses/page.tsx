@@ -21,15 +21,14 @@ export default function CoursesPage() {
 
   useEffect(() => {
     const fetchCourses = async () => {
+      if (!firestore) return;
       setLoading(true);
       const fetchedCourses = await getCourses(firestore);
       setCourses(fetchedCourses);
       setLoading(false);
     };
 
-    if (firestore) {
-      fetchCourses();
-    }
+    fetchCourses();
   }, [firestore]);
 
 

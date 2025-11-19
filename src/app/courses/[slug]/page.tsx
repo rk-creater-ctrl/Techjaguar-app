@@ -28,6 +28,7 @@ export default function CourseDetailPage({
 
   useEffect(() => {
     const fetchCourse = async () => {
+      if (!firestore) return;
       setLoading(true);
       const fetchedCourse = await getCourseBySlug(firestore, params.slug);
       if (fetchedCourse) {
@@ -38,9 +39,7 @@ export default function CourseDetailPage({
       setLoading(false);
     };
 
-    if (firestore) {
-      fetchCourse();
-    }
+    fetchCourse();
   }, [firestore, params.slug]);
 
   if (loading || !course) {
