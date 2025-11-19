@@ -6,6 +6,7 @@ import {
   type PersonalizedCourseRecommendationsOutput,
 } from '@/ai/flows/personalized-course-recommendations';
 import { getCourses } from '@/lib/data';
+import { initializeFirebase } from '@/firebase';
 
 const schema = z.object({
   learningHistory: z.array(z.string()),
@@ -43,7 +44,8 @@ export async function getRecommendationsAction(
   }
 
   try {
-    const allCourses = await getCourses();
+    const { firestore } = initializeFirebase();
+    const allCourses = await getCourses(firestore);
     const learningHistoryTitles = validatedFields.data.learningHistory.map(courseId => {
         const course = allCourses.find(c => c.id === courseId);
         return course ? course.title : courseId;

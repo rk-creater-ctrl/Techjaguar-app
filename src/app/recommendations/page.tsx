@@ -1,10 +1,13 @@
+'use server';
 import { getCourses } from '@/lib/data';
 import { RecommendationsForm } from './recommendations-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
+import { initializeFirebase } from '@/firebase';
 
 export default async function RecommendationsPage() {
-  const courses = await getCourses();
+  const { firestore } = initializeFirebase();
+  const courses = await getCourses(firestore);
   const courseOptions = courses.map((course) => ({
     value: course.id,
     label: course.title,

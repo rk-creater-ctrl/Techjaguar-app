@@ -34,6 +34,10 @@ const slugify = (title: string) =>
     .replace(/(^-|-$)+/g, '');
 
 export const getCourses = async (db: Firestore): Promise<Course[]> => {
+  if (!db) {
+    console.error("Firestore instance is not available in getCourses");
+    return [];
+  }
   const coursesCol = collection(db, 'courses');
   const courseSnapshot = await getDocs(coursesCol);
   const courseList = courseSnapshot.docs.map((doc) => {
@@ -57,6 +61,10 @@ export const getCourseBySlug = async (
   db: Firestore,
   slug: string
 ): Promise<Course | undefined> => {
+   if (!db) {
+    console.error("Firestore instance is not available in getCourseBySlug");
+    return undefined;
+  }
   const coursesRef = collection(db, 'courses');
   const q = query(coursesRef);
   const querySnapshot = await getDocs(q);
