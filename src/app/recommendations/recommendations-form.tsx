@@ -57,7 +57,18 @@ export function RecommendationsForm({ courses }: RecommendationsFormProps) {
   return (
     <div>
       <Form {...form}>
-        <form action={formAction} className="space-y-8">
+        <form
+          onSubmit={(evt) => {
+            evt.preventDefault();
+            const formData = new FormData(evt.currentTarget);
+            form.trigger().then((isValid) => {
+              if (isValid) {
+                formAction(formData);
+              }
+            });
+          }}
+          className="space-y-8"
+        >
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <FormField

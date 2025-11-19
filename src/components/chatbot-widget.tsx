@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, useRef, useEffect, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Bot, User, Send, Loader2, X } from 'lucide-react';
 import {
   Popover,
@@ -82,7 +83,7 @@ export function ChatbotWidget() {
       text: "Hello! I'm the Techjaguar Academy assistant. How can I help?",
     },
   ]);
-  const [state, formAction] = useFormState(
+  const [state, formAction] = useActionState(
     getChatbotResponseAction,
     initialState
   );
