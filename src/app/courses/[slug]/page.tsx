@@ -11,6 +11,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Lock, PlayCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 export default async function CourseDetailPage({
   params,
@@ -27,6 +28,10 @@ export default async function CourseDetailPage({
     <div className="mx-auto grid max-w-6xl flex-1 auto-rows-max gap-4">
       <div className="flex items-center gap-4">
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0 font-headline">
+          <Link href="/courses" className="text-muted-foreground hover:underline">
+            Courses
+          </Link>
+          <span className="mx-2 text-muted-foreground">/</span>
           {course.title}
         </h1>
         <div className="hidden items-center gap-2 md:ml-auto md:flex">

@@ -9,6 +9,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { StudyVerseLogo } from './icons';
+import { NavLink } from './nav-link';
 
 export function AppSidebar() {
   return (
@@ -22,34 +23,22 @@ export function AppSidebar() {
         </div>
         <div className="flex-1">
           <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted"
-            >
+            <NavLink href="/">
               <Home className="h-4 w-4" />
               Dashboard
-            </Link>
-            <Link
-              href="/courses"
-              className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-            >
+            </NavLink>
+            <NavLink href="/courses">
               <BookOpen className="h-4 w-4" />
               Courses
-            </Link>
-            <Link
-              href="/recommendations"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted"
-            >
+            </NavLink>
+            <NavLink href="/recommendations">
               <Sparkles className="h-4 w-4" />
               For You
-            </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted"
-            >
+            </NavLink>
+            <NavLink href="/go-live">
               <Radio className="h-4 w-4" />
               Go Live
-            </Link>
+            </NavLink>
           </nav>
         </div>
         <div className="mt-auto p-4">
