@@ -1,0 +1,389 @@
+{
+  "entities": {
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Represents a course offered on the StudyVerse platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the course."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the course."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the course content and objectives."
+        },
+        "instructorId": {
+          "type": "string",
+          "description": "Reference to Instructor. (Relationship: Instructor 1:N Course)"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Course)"
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the course. Set to 0 for free courses."
+        },
+        "isFree": {
+          "type": "boolean",
+          "description": "Indicates whether the course is available for free without a subscription."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the course.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "instructorId",
+        "categoryId",
+        "price",
+        "isFree",
+        "imageUrl"
+      ]
+    },
+    "Instructor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Instructor",
+      "type": "object",
+      "description": "Represents an instructor who creates and manages courses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the instructor."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the instructor."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the instructor.",
+          "format": "email"
+        },
+        "bio": {
+          "type": "string",
+          "description": "Short biography of the instructor."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "bio"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category to which courses belong.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category (e.g., 'Mathematics', 'Science')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Lecture": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lecture",
+      "type": "object",
+      "description": "Represents a single lecture within a course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the lecture."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Lecture)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the lecture."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the lecture content."
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "URL of the video file for the lecture.",
+          "format": "uri"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Duration of the lecture in minutes."
+        }
+      },
+      "required": [
+        "id",
+        "courseId",
+        "title",
+        "description",
+        "videoUrl",
+        "duration"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription to the StudyVerse platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the subscription."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Subscription)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the subscription.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of the subscription.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the subscription (e.g., 'active', 'inactive')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startDate",
+        "endDate",
+        "status"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the StudyVerse platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "Progress": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Progress",
+      "type": "object",
+      "description": "Represents a user's progress on the course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the progress."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Progress)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Progress)"
+        },
+        "lastAccessed": {
+          "type": "string",
+          "description": "Last time the course was accessed",
+          "format": "date-time"
+        },
+        "completedLectures": {
+          "type": "array",
+          "description": "Lectures completed by user on this course",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "courseId",
+        "lastAccessed",
+        "completedLectures"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Used for authentication and personalization. Includes denormalized data as necessary to avoid get() calls in subcollections.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/instructors/{instructorId}",
+        "definition": {
+          "entityName": "Instructor",
+          "schema": {
+            "$ref": "#/backend/entities/Instructor"
+          },
+          "description": "Stores instructor profiles. Allows instructors to manage their courses.",
+          "params": [
+            {
+              "name": "instructorId",
+              "description": "The unique identifier of the instructor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores course categories. Used for course filtering and organization.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores course information. Contains details about each course offered on the platform.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}/lectures/{lectureId}",
+        "definition": {
+          "entityName": "Lecture",
+          "schema": {
+            "$ref": "#/backend/entities/Lecture"
+          },
+          "description": "Stores lectures for each course.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the course."
+            },
+            {
+              "name": "lectureId",
+              "description": "The unique identifier of the lecture."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores user subscription information. Controls access to premium content.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier of the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/progress/{progressId}",
+        "definition": {
+          "entityName": "Progress",
+          "schema": {
+            "$ref": "#/backend/entities/Progress"
+          },
+          "description": "Tracks user progress in each course.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "progressId",
+              "description": "The unique identifier of the progress."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support StudyVerse's core features, focusing on secure access control, scalability, and maintainability. It prioritizes authorization independence to avoid complex and fragile security rules that rely on hierarchical `get()` calls. The structure adheres to the principle of structural segregation, ensuring that collections contain documents with similar security postures. Access control is modeled consistently using path-based ownership and membership maps where appropriate.\n\n**Key Design Choices and Justifications:**\n\n*   **/users/{userId}/**:  User data is stored in a path-based ownership model. This allows for easy management of user-specific data and simplifies security rules.\n*   **/instructors/{instructorId}/**: Instructor data is stored separately. This enables independent management and scaling of instructor profiles and related data.\n*   **/categories/{categoryId}/**: Category data is stored globally for course categorization.\n*   **/courses/{courseId}/**: Course data is stored globally.  The `instructorId` field links courses to instructors.  Free courses are determined by the `isFree` boolean and `price` field.\n*   **/courses/{courseId}/lectures/{lectureId}/**: Lectures are stored as subcollections of courses, establishing a clear hierarchy. This simplifies queries for lectures within a specific course. Because lectures require the same authorization scope as Courses (e.g., instructors can create/modify, users with subscriptions can view), it inherits the authorization scope of the Course entity.\n*   **/users/{userId}/subscriptions/{subscriptionId}/**: Subscription data is stored under each user, enabling easy retrieval of a user's subscription status. The `status` field explicitly models the subscription state.\n*   **/users/{userId}/progress/{progressId}/**:  Course progress is tracked per user, using a document ID per course. The document contains the `completedLectures` array. This keeps track of a user's progress in a course.\n\n**Authorization Independence and QAPs:**\n\nAuthorization independence is achieved by avoiding `get()` calls in security rules. For example, a lecture's access control doesn't need to `get()` the parent course's information because access is implicitly granted if the user can access the course.\n\nThe design supports required QAPs (Rules are not Filters) by:\n\n*   **Structural Segregation:** Placing different data types into different collections, ensuring security rules can be written without needing to filter data.\n*   **Path-Based Ownership:**  Using path-based ownership (e.g., `/users/{userId}/subscriptions/{subscriptionId}`) allows security rules to easily verify ownership based on the request path.\n\nThis structure ensures a secure, scalable, and easily debuggable Firestore database for StudyVerse."
+  }
+}

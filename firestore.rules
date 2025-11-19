@@ -1,0 +1,237 @@
+/**
+ * @fileOverview Firestore Security Rules for StudyVerse.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for personal data and
+ * allows public read access to course-related data, with restricted write
+ * access for authorized instructors. It prioritizes authorization independence
+ * and structural segregation for secure and maintainable rules.
+ *
+ * Data Structure:
+ * - /users/{userId}: User profiles, accessible only by the user themselves.
+ * - /instructors/{instructorId}: Instructor profiles, publicly readable but
+ *   writable only by the instructor.
+ * - /categories/{categoryId}: Course categories, publicly readable. Write access
+ *   is not explicitly defined, implying it should be restricted.
+ * - /courses/{courseId}: Course information, publicly readable, but writable
+ *   only by the instructor who owns the course.
+ * - /courses/{courseId}/lectures/{lectureId}: Lectures for each course, inheriting
+ *   the access control of the parent course.
+ * - /users/{userId}/subscriptions/{subscriptionId}: User subscription information,
+ *   accessible only by the user.
+ * - /users/{userId}/progress/{progressId}: User course progress, accessible only
+ *   by the user.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data under /users/{userId}.
+ * - Public read access is granted for course-related information.
+ * - Instructors can create, update, and delete courses they own.
+ * - Listing of users and instructors is disallowed for privacy reasons.
+ * - Default deny for any ambiguous or unspecified write operations.
+ *
+ * Denormalization for Authorization:
+ * - Courses denormalize instructorId to enable easy ownership checks without
+ *   additional `get()` calls.
+ *
+ * Structural Segregation:
+ * - User-specific data is stored under /users/{userId}, separating it from
+ *   public course data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is authenticated.
+     * @returns {boolean} True if the request is authenticated, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId - The user ID to compare against.
+     * @returns {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+        /**
+     * @description Checks if the authenticated user is the owner and the resource exists.
+     * @param {string} userId - The user ID to compare against.
+     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces that the instructorId of a course matches the authenticated user.
+     * @returns {boolean} True if the course instructorId matches the authenticated user's UID, false otherwise.
+     */
+    function isCourseInstructor() {
+        return isSignedIn() && request.resource.data.instructorId == request.auth.uid;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the course (based on instructorId).
+     * @param {string} instructorId - The instructor ID of the course.
+     * @returns {boolean} True if the user is the instructor, false otherwise.
+     */
+    function isCourseOwnedByInstructor(instructorId) {
+      return isSignedIn() && instructorId == request.auth.uid;
+    }
+
+    /**
+     * @description
+     *  - Allows a user to only access their own profile.
+     * @path /users/{userId}
+     * @allow (get) User with ID 'user123' can get their own profile. (auth.uid: 'user123')
+     * @allow (create) User with ID 'user123' can create their own profile if the ID matches. (auth.uid: 'user123')
+     * @allow (update) User with ID 'user123' can update their own profile. (auth.uid: 'user123')
+     * @allow (delete) User with ID 'user123' can delete their own profile. (auth.uid: 'user123')
+     * @deny (get) User with ID 'user456' cannot get the profile of user 'user123'. (auth.uid: 'user456')
+     * @deny (create) User with ID 'user456' cannot create a profile for user 'user123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update the profile of user 'user123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete the profile of user 'user123'. (auth.uid: 'user456')
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Listing users is not permitted.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description
+     *  - Allows anyone to read instructor profiles, but only the instructor can modify their own profile.
+     * @path /instructors/{instructorId}
+     * @allow (get) Any user can get an instructor's profile.
+     * @allow (create) Instructor with ID 'instructor123' can create their own profile if the ID matches. (auth.uid: 'instructor123')
+     * @allow (update) Instructor with ID 'instructor123' can update their own profile. (auth.uid: 'instructor123')
+     * @allow (delete) Instructor with ID 'instructor123' can delete their own profile. (auth.uid: 'instructor123')
+     * @deny (create) User with ID 'user456' cannot create a profile for instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update the profile of instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete the profile of instructor 'instructor123'. (auth.uid: 'user456')
+     * @principle Allows public read access with owner-only writes.
+     */
+    match /instructors/{instructorId} {
+      allow get: if true;
+      allow list: if false; // Listing instructors is not permitted.
+      allow create: if isOwner(instructorId) && request.resource.data.id == instructorId;
+      allow update: if isExistingOwner(instructorId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(instructorId);
+    }
+
+    /**
+     * @description
+     *  - Allows anyone to read course categories. Write access is implicitly denied.
+     * @path /categories/{categoryId}
+     * @allow (get) Any user can get a category.
+     * @deny (create) No one can create a category (explicitly denied).
+     * @deny (update) No one can update a category (explicitly denied).
+     * @deny (delete) No one can delete a category (explicitly denied).
+     * @principle Allows public read-only access.
+     */
+    match /categories/{categoryId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description
+     *  - Allows anyone to read course information, but only the instructor who owns the course can modify it.
+     * @path /courses/{courseId}
+     * @allow (get) Any user can get course information.
+     * @allow (list) Any user can list courses.
+     * @allow (create) Instructor with ID 'instructor123' can create a course where instructorId matches. (auth.uid: 'instructor123')
+     * @allow (update) Instructor with ID 'instructor123' can update a course where instructorId matches. (auth.uid: 'instructor123')
+     * @allow (delete) Instructor with ID 'instructor123' can delete a course where instructorId matches. (auth.uid: 'instructor123')
+     * @deny (create) User with ID 'user456' cannot create a course for instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update a course owned by instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete a course owned by instructor 'instructor123'. (auth.uid: 'user456')
+     * @principle Allows public read access with owner-only writes.
+     */
+    match /courses/{courseId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isCourseInstructor();
+      allow update: if resource != null && isCourseOwnedByInstructor(resource.data.instructorId);
+      allow delete: if resource != null && isCourseOwnedByInstructor(resource.data.instructorId);
+    }
+
+    /**
+     * @description
+     *  - Allows anyone to read lecture information, but only the instructor who owns the course can modify it.
+     *  - Inherits access control from the parent Course entity.
+     * @path /courses/{courseId}/lectures/{lectureId}
+     * @allow (get) Any user can get lecture information.
+     * @allow (list) Any user can list lectures.
+     * @allow (create) Instructor with ID 'instructor123' can create a lecture for a course they own. (auth.uid: 'instructor123')
+     * @allow (update) Instructor with ID 'instructor123' can update a lecture for a course they own. (auth.uid: 'instructor123')
+     * @allow (delete) Instructor with ID 'instructor123' can delete a lecture for a course they own. (auth.uid: 'instructor123')
+     * @deny (create) User with ID 'user456' cannot create a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
+     * @principle Inherits access control from the parent Course entity.
+     */
+    match /courses/{courseId}/lectures/{lectureId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
+        allow update: if resource != null && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
+        allow delete: if resource != null && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
+    }
+
+    /**
+     * @description
+     *  - Allows a user to only access their own subscription information.
+     * @path /users/{userId}/subscriptions/{subscriptionId}
+     * @allow (get) User with ID 'user123' can get their own subscription. (auth.uid: 'user123')
+     * @allow (create) User with ID 'user123' can create their own subscription if the ID matches. (auth.uid: 'user123')
+     * @allow (update) User with ID 'user123' can update their own subscription. (auth.uid: 'user123')
+     * @allow (delete) User with ID 'user123' can delete their own subscription. (auth.uid: 'user123')
+     * @deny (get) User with ID 'user456' cannot get the subscription of user 'user123'. (auth.uid: 'user456')
+     * @deny (create) User with ID 'user456' cannot create a subscription for user 'user123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update the subscription of user 'user123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete the subscription of user 'user123'. (auth.uid: 'user456')
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/subscriptions/{subscriptionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description
+     *  - Allows a user to only access their own course progress information.
+     * @path /users/{userId}/progress/{progressId}
+     * @allow (get) User with ID 'user123' can get their own course progress. (auth.uid: 'user123')
+     * @allow (create) User with ID 'user123' can create their own course progress if the ID matches. (auth.uid: 'user123')
+     * @allow (update) User with ID 'user123' can update their own course progress. (auth.uid: 'user123')
+     * @allow (delete) User with ID 'user123' can delete their own course progress. (auth.uid: 'user123')
+     * @deny (get) User with ID 'user456' cannot get the course progress of user 'user123'. (auth.uid: 'user456')
+     * @deny (create) User with ID 'user456' cannot create course progress for user 'user123'. (auth.uid: 'user456')
+     * @deny (update) User with ID 'user456' cannot update the course progress of user 'user123'. (auth.uid: 'user456')
+     * @deny (delete) User with ID 'user456' cannot delete the course progress of user 'user123'. (auth.uid: 'user456')
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/progress/{progressId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
