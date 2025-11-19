@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,13 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, query, where } from 'firebase/firestore';
 import { useCollection, WithId } from '@/firebase/firestore/use-collection';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { updateUserProfile } from '@/firebase/non-blocking-login';
 
 interface Subscription {
   id: string;
@@ -24,6 +31,86 @@ interface Subscription {
   startDate: { toDate: () => Date };
   endDate: { toDate: () => Date };
 }
+
+const profileFormSchema = z.object({
+  displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  photoURL: z.string().url({ message: "Please enter a valid URL." }).or(z.literal('')),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+
+function ProfileEditForm() {
+    const { user } = useUser();
+    const auth = useAuth();
+    const { toast } = useToast();
+
+    const form = useForm<ProfileFormValues>({
+        resolver: zodResolver(profileFormSchema),
+        defaultValues: {
+            displayName: user?.displayName || '',
+            photoURL: user?.photoURL || '',
+        },
+    });
+
+    function onSubmit(data: ProfileFormValues) {
+        updateUserProfile(auth, {
+            displayName: data.displayName,
+            photoURL: data.photoURL,
+        });
+        toast({
+            title: "Profile Updated",
+            description: "Your changes have been saved.",
+        });
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Edit Profile</CardTitle>
+                <CardDescription>Update your display name and profile picture.</CardDescription>
+            </CardHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardContent className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="displayName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Display Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Your Name" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="photoURL"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Photo URL</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="https://example.com/photo.jpg" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                    <CardFooter className="border-t pt-6">
+                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Form>
+        </Card>
+    );
+}
+
 
 function SubscriptionDetails({ userId }: { userId: string }) {
   const firestore = useFirestore();
@@ -103,7 +190,7 @@ export default function ProfilePage() {
 
   if (isUserLoading || !user) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-8">
         <Card>
           <CardHeader className="flex flex-row items-center gap-4">
             <Skeleton className="h-20 w-20 rounded-full" />
@@ -112,16 +199,22 @@ export default function ProfilePage() {
               <Skeleton className="h-4 w-60" />
             </div>
           </CardHeader>
-          <CardContent>
-            <Skeleton className="h-32 w-full" />
-          </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="h-32 w-full" />
+            </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-8">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
@@ -138,8 +231,10 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
       </Card>
+      
+      <ProfileEditForm />
 
-      <Card className="mt-8">
+      <Card>
         <CardHeader>
           <CardTitle className="font-headline">Subscription Details</CardTitle>
           <CardDescription>

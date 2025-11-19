@@ -41,3 +41,16 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
   signInWithEmailAndPassword(authInstance, email, password);
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
+
+
+/** Initiate user profile update (non-blocking). */
+export function updateUserProfile(
+  authInstance: Auth,
+  updates: { displayName?: string; photoURL?: string }
+): void {
+  if (authInstance.currentUser) {
+    updateProfile(authInstance.currentUser, updates).catch((error) => {
+      console.error('Profile update error:', error);
+    });
+  }
+}
