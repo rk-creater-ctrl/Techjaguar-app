@@ -6,7 +6,7 @@ import { AppHeader } from '@/components/app-header';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'StudyVerse - Your Universe of Learning',
+  title: 'Tech Learnings - Your Universe of Learning',
   description: 'Live classes, recorded lectures, notes, and personalized learning paths.',
 };
 
