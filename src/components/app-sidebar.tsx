@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { Home, BookOpen, Sparkles, Radio, Star, Video, Mic } from 'lucide-react';
@@ -67,10 +66,12 @@ export function AppSidebar() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-              <Button size="sm" className="w-full">
-                <Star className="mr-2 h-4 w-4" />
-                Upgrade
-              </Button>
+              <Link href="/billing">
+                <Button size="sm" className="w-full">
+                  <Star className="mr-2 h-4 w-4" />
+                  Upgrade
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
