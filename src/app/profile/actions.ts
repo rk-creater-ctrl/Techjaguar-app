@@ -26,23 +26,30 @@ export async function setInstructorAction(
       message: 'Error: Invalid UID provided.',
     };
   }
+  
+  const envPath = path.resolve(process.cwd(), '.env');
+  let envContent = '';
+  try {
+    envContent = await fs.readFile(envPath, 'utf8');
+  } catch (error: any) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  // Check if the instructor UID is already set
+  if (envContent.includes('NEXT_PUBLIC_INSTRUCTOR_UID=')) {
+     const existingUid = envContent.split('\n').find(line => line.startsWith('NEXT_PUBLIC_INSTRUCTOR_UID='))?.split('=')[1];
+     if(existingUid && existingUid.trim() !== '' && existingUid.trim() !== 'YOUR_INSTRUCTOR_FIREBASE_UID') {
+        return { message: 'Error: An instructor has already been set for this application.' };
+     }
+  }
+
 
   const { uid } = validatedFields.data;
   const envVar = `NEXT_PUBLIC_INSTRUCTOR_UID=${uid}`;
 
   try {
-    const envPath = path.resolve(process.cwd(), '.env');
-    
-    let envContent = '';
-    try {
-      envContent = await fs.readFile(envPath, 'utf8');
-    } catch (error: any) {
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
-      // File doesn't exist, we will create it.
-    }
-
     const lines = envContent.split('\n');
     let found = false;
     const newLines = lines.map(line => {
