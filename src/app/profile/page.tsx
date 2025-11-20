@@ -24,6 +24,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
+import { Clipboard } from 'lucide-react';
 
 interface Subscription {
   id: string;
@@ -178,6 +179,7 @@ function SubscriptionDetails({ userId }: { userId: string }) {
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '';
@@ -186,6 +188,16 @@ export default function ProfilePage() {
       return names[0][0] + names[names.length - 1][0];
     }
     return name[0];
+  };
+
+  const copyToClipboard = () => {
+    if (user?.uid) {
+      navigator.clipboard.writeText(user.uid);
+      toast({
+        title: "Copied to Clipboard",
+        description: "Your User ID has been copied.",
+      });
+    }
   };
 
   if (isUserLoading || !user) {
@@ -230,22 +242,24 @@ export default function ProfilePage() {
             </div>
           </div>
         </CardHeader>
+        <CardContent>
+            <div className="space-y-2">
+                <Label htmlFor="uid">User ID (for Admin Setup)</Label>
+                 <div className="flex items-center gap-2">
+                    <Input id="uid" readOnly value={user.uid} className="bg-muted" />
+                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                        <Clipboard className="h-4 w-4" />
+                    </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    Copy this ID and paste it into your <code>.env</code> file as <code>NEXT_PUBLIC_INSTRUCTOR_UID</code> to gain admin privileges.
+                </p>
+            </div>
+        </CardContent>
       </Card>
       
       <ProfileEditForm />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Subscription Details</CardTitle>
-          <CardDescription>
-            Manage your subscription and billing information.
-          </CardDescription>
-        </CardHeader>
-        <SubscriptionDetails userId={user.uid} />
-        <CardFooter className="border-t pt-6">
-          <Button variant="outline">Manage Billing</Button>
-        </CardFooter>
-      </Card>
     </div>
   );
 }
