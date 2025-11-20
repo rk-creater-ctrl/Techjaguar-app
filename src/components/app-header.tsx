@@ -7,6 +7,7 @@ import {
   Search,
   PanelLeft,
   Video,
+  Mic,
 } from 'lucide-react';
 import {
   Sheet,
@@ -51,7 +52,7 @@ export function AppHeader() {
             </Link>
             <Link
               href="/courses"
-              className="flex items-center gap-4 px-2.5 text-foreground"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
               <BookOpen className="h-5 w-5" />
               Courses
@@ -64,6 +65,13 @@ export function AppHeader() {
               Classes
             </Link>
             <Link
+              href="/live-sessions"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Radio className="h-5 w-5" />
+              Live Sessions
+            </Link>
+            <Link
               href="/recommendations"
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
@@ -72,11 +80,11 @@ export function AppHeader() {
             </Link>
             {isInstructor && (
               <Link
-                href="/go-live"
+                href="/studio"
                 className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
               >
-                <Radio className="h-5 w-5" />
-                Go Live
+                <Mic className="h-5 w-5" />
+                Studio
               </Link>
             )}
           </nav>

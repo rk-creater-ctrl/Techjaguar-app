@@ -1,7 +1,7 @@
 
 'use client';
 import Link from 'next/link';
-import { Home, BookOpen, Sparkles, Radio, Star, Video } from 'lucide-react';
+import { Home, BookOpen, Sparkles, Radio, Star, Video, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -42,14 +42,18 @@ export function AppSidebar() {
               <Video className="h-4 w-4" />
               Classes
             </NavLink>
+             <NavLink href="/live-sessions">
+              <Radio className="h-4 w-4" />
+              Live Sessions
+            </NavLink>
             <NavLink href="/recommendations">
               <Sparkles className="h-4 w-4" />
               For You
             </NavLink>
             {isInstructor && (
-              <NavLink href="/go-live">
-                <Radio className="h-4 w-4" />
-                Go Live
+              <NavLink href="/studio">
+                <Mic className="h-4 w-4" />
+                Studio
               </NavLink>
             )}
           </nav>

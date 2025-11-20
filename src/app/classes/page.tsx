@@ -15,45 +15,61 @@ import { useCollection, WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection } from 'firebase/firestore';
 import type { RecordedClass } from '@/lib/schema';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
 
 function ClassCard({ classItem }: { classItem: WithId<RecordedClass> }) {
-  // In a real app you might have a dedicated page for each class
-  // For now, we link directly to the video if the URL exists.
   const videoUrl = classItem.videoUrl;
 
+  const CardWrapper = ({ children }: { children: React.ReactNode }) =>
+  classItem.isFree ? (
+    <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:shadow-lg transition-shadow duration-300 h-full group">
+      {children}
+    </a>
+  ) : (
+    <div className="relative h-full">{children}</div>
+  );
+
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline hover:underline">
-          {videoUrl ? (
-            <a href={videoUrl} target="_blank" rel="noopener noreferrer">
+     <CardWrapper>
+        <Card className="overflow-hidden h-full flex flex-col">
+          {!classItem.isFree && (
+            <div className="absolute top-2 right-2 z-10">
+              <Badge variant="default" className="bg-primary hover:bg-primary">
+                <Lock className="w-3 h-3 mr-1" />
+                PRO
+              </Badge>
+            </div>
+          )}
+          <CardHeader>
+            <CardTitle className="font-headline group-hover:underline">
               {classItem.title}
-            </a>
-          ) : (
-            <span>{classItem.title}</span>
-          )}
-        </CardTitle>
-        <CardDescription>
-          {classItem.description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-          {videoUrl ? (
-             <iframe
-                className="w-full h-full rounded-md"
-                src={videoUrl.replace("watch?v=", "embed/")} // Basic transform for YouTube links
-                title={classItem.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-          ) : (
-            <Video className="h-12 w-12 text-muted-foreground" />
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            </CardTitle>
+            <CardDescription>
+              {classItem.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+              {videoUrl ? (
+                 <iframe
+                    className="w-full h-full rounded-md"
+                    src={videoUrl.replace("watch?v=", "embed/")} 
+                    title={classItem.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+              ) : (
+                <Video className="h-12 w-12 text-muted-foreground" />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+     </CardWrapper>
   );
 }
 
@@ -70,9 +86,32 @@ export default function ClassesPage() {
 
   const { data: recordedClasses, isLoading } = useCollection<RecordedClass>(classesQuery);
 
+  const freeClasses = recordedClasses?.filter((c) => c.isFree) || [];
+  const premiumClasses = recordedClasses?.filter((c) => !c.isFree) || [];
+
+  const ClassGrid = ({ classes }: { classes: WithId<RecordedClass>[] }) => (
+    <div className="grid gap-6 mt-4 md:grid-cols-2 lg:grid-cols-3">
+        {classes.length > 0 ? (
+            classes.map((rec: WithId<RecordedClass>) => (
+            <ClassCard key={rec.id} classItem={rec} />
+            ))
+        ) : (
+            <div className="md:col-span-2 lg:col-span-3">
+                <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed rounded-lg">
+                    <Video className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold">No Classes Found</h3>
+                    <p className="text-muted-foreground">
+                        There are no classes in this category yet.
+                    </p>
+                </div>
+            </div>
+        )}
+    </div>
+  );
+
   const LoadingSkeleton = () => (
-    <div className="grid gap-6">
-      {[...Array(2)].map((_, i) => (
+    <div className="grid gap-6 mt-4 md:grid-cols-2 lg:grid-cols-3">
+      {[...Array(3)].map((_, i) => (
         <Card key={i}>
           <CardHeader>
             <Skeleton className="h-6 w-3/4 mb-2" />
@@ -104,34 +143,29 @@ export default function ClassesPage() {
             <Link href="/classes/new">
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Video
+                Add Class
               </Button>
             </Link>
           </div>
         )}
       </div>
       
-      {isLoading ? (
-        <LoadingSkeleton />
-      ) : (
-        <div className="grid gap-6">
-          {recordedClasses && recordedClasses.length > 0 ? (
-            recordedClasses.map((rec: WithId<RecordedClass>) => (
-              <ClassCard key={rec.id} classItem={rec} />
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed rounded-lg">
-              <Video className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No Recorded Classes Available</h3>
-              <p className="text-muted-foreground">
-                {isInstructor
-                  ? 'Click "Add Video" to upload a new class.'
-                  : 'Check back later for recordings of live sessions.'}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+       <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="free">Free</TabsTrigger>
+          <TabsTrigger value="premium">Premium</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all">
+          {isLoading ? <LoadingSkeleton /> : <ClassGrid classes={recordedClasses || []} />}
+        </TabsContent>
+        <TabsContent value="free">
+          {isLoading ? <LoadingSkeleton /> : <ClassGrid classes={freeClasses} />}
+        </TabsContent>
+        <TabsContent value="premium">
+          {isLoading ? <LoadingSkeleton /> : <ClassGrid classes={premiumClasses} />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

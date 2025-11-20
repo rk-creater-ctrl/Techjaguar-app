@@ -49,4 +49,15 @@ export interface RecordedClass {
   videoUrl: string;
   instructorId: string;
   createdAt: any; // Firestore timestamp
+  isFree: boolean;
+}
+
+export interface LiveSession {
+    id: string;
+    title: string;
+    description: string;
+    instructorId: string;
+    scheduledTime: any; // Firestore timestamp
+    isFree: boolean;
+    meetingUrl: string;
 }

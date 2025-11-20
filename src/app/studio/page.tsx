@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Video, VideoOff, AlertTriangle, Disc, Square, Loader2 } from 'lucide-react';
+import { Video, VideoOff, Disc, Square, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -17,7 +16,7 @@ interface SavedRecording {
   date: string;
 }
 
-export default function GoLivePage() {
+export default function StudioPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -146,7 +145,7 @@ export default function GoLivePage() {
         setRecordingName('');
         toast({
           title: 'Recording Saved',
-          description: `"${newRecording.name}" has been saved.`,
+          description: `"${newRecording.name}" has been saved locally.`,
         });
       };
 
@@ -166,7 +165,7 @@ export default function GoLivePage() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between space-y-2 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Go Live</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Streaming Studio</h1>
           <p className="text-muted-foreground">
             Start a live session, record it, and manage your recordings.
           </p>
@@ -176,7 +175,7 @@ export default function GoLivePage() {
         <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
-                <CardTitle className="font-headline">Live Stream</CardTitle>
+                <CardTitle className="font-headline">Live Preview</CardTitle>
                 </CardHeader>
                 <CardContent>
                 <div className="aspect-video bg-muted rounded-md flex items-center justify-center relative overflow-hidden">
@@ -190,7 +189,8 @@ export default function GoLivePage() {
                     )}
                     {hasCameraPermission === null && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
-                            <p>Requesting camera permission...</p>
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <p className="mt-2">Requesting camera permission...</p>
                         </div>
                     )}
                     {isStreaming && (
@@ -202,6 +202,12 @@ export default function GoLivePage() {
                             <span className="text-sm font-medium text-white bg-black/50 px-2 py-1 rounded-md">Live</span>
                         </div>
                     )}
+                     {isRecording && (
+                        <div className="absolute top-4 right-4 flex items-center gap-2 text-red-500">
+                             <Disc className="h-5 w-5 animate-pulse" />
+                            <span className="text-sm font-medium text-white bg-black/50 px-2 py-1 rounded-md">REC</span>
+                        </div>
+                    )}
                 </div>
                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <Button size="lg" onClick={handleToggleStreaming} disabled={hasCameraPermission === null || hasCameraPermission === false}>
@@ -211,7 +217,7 @@ export default function GoLivePage() {
                         </>
                     ) : (
                         <>
-                        <Video className="mr-2" /> Start Streaming
+                        <Video className="mr-2" /> Go Live
                         </>
                     )}
                     </Button>
@@ -225,11 +231,11 @@ export default function GoLivePage() {
                         />
                         {isRecording ? (
                             <Button size="lg" onClick={handleStopRecording} variant="destructive">
-                                <Square className="mr-2" /> Stop Recording
+                                <Square className="mr-2" /> Stop
                             </Button>
                         ) : (
                             <Button size="lg" onClick={handleStartRecording} disabled={!isStreaming}>
-                                <Disc className="mr-2 animate-pulse" /> Start Recording
+                                <Disc className="mr-2" /> Record
                             </Button>
                         )}
                     </div>
@@ -240,19 +246,22 @@ export default function GoLivePage() {
         <div>
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Saved Recordings</CardTitle>
+                    <CardTitle className="font-headline">Local Recordings</CardTitle>
+                    <CardDescription>Recordings are saved in your browser and will be lost on refresh. Download them to save permanently.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {savedRecordings.length > 0 ? (
-                        <ul className="space-y-4">
+                        <ul className="space-y-4 max-h-[500px] overflow-y-auto">
                             {savedRecordings.map((rec, index) => (
-                                <li key={index} className="flex flex-col p-3 border rounded-lg">
-                                    <span className="font-semibold">{rec.name}</span>
+                                <li key={index} className="flex flex-col p-3 border rounded-lg bg-muted/50">
+                                    <span className="font-semibold truncate">{rec.name}</span>
                                     <span className="text-sm text-muted-foreground">{rec.date}</span>
-                                    <a href={rec.url} download={rec.name + '.webm'} className="text-sm text-primary hover:underline mt-2">
-                                        Download
+                                    <a href={rec.url} download={rec.name + '.webm'}>
+                                       <Button variant="outline" size="sm" className="mt-2 w-full">
+                                            <Download className="mr-2 h-4 w-4" />
+                                            Download
+                                        </Button>
                                     </a>
-                                     <video src={rec.url} controls className="mt-2 rounded-md" />
                                 </li>
                             ))}
                         </ul>

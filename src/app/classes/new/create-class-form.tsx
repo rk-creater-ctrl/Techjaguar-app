@@ -21,11 +21,14 @@ import { useFirestore, useUser } from '@/firebase';
 import { createClass } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
 import { Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
+
 
 const classSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
+  isFree: z.boolean().default(false),
   // videoUrl is now handled separately
 });
 
@@ -44,6 +47,7 @@ export function CreateClassForm() {
     defaultValues: {
       title: '',
       description: '',
+      isFree: false,
     },
   });
 
@@ -135,33 +139,56 @@ export function CreateClassForm() {
             </FormItem>
           )}
         />
-        
-        <FormItem>
-            <FormLabel>Video File</FormLabel>
-            <FormControl>
-                <div>
-                    <Input 
-                        type="file" 
-                        className="hidden"
-                        ref={fileInputRef}
-                        accept="video/*"
-                        onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <FormItem>
+                <FormLabel>Video File</FormLabel>
+                <FormControl>
+                    <div>
+                        <Input 
+                            type="file" 
+                            className="hidden"
+                            ref={fileInputRef}
+                            accept="video/*"
+                            onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+                        />
+                        <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Choose Video
+                        </Button>
+                    </div>
+                </FormControl>
+                 <FormDescription>
+                    {fileName ? `Selected file: ${fileName}` : "Select a video file to upload."}
+                  </FormDescription>
+                <FormMessage />
+            </FormItem>
+            
+            <FormField
+                control={form.control}
+                name="isFree"
+                render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                    <FormLabel>Free Class</FormLabel>
+                    <FormDescription>
+                        Is this class available for free?
+                    </FormDescription>
+                    </div>
+                    <FormControl>
+                    <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                     />
-                    <Button 
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Choose Video
-                    </Button>
-                </div>
-            </FormControl>
-             <FormDescription>
-                {fileName ? `Selected file: ${fileName}` : "Select a video file to upload."}
-              </FormDescription>
-            <FormMessage />
-        </FormItem>
+                    </FormControl>
+                </FormItem>
+                )}
+            />
+        </div>
 
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
