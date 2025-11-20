@@ -59,7 +59,8 @@ export const getCourses = async (db: Firestore): Promise<Course[]> => {
 
 export const getCourseBySlug = async (
   db: Firestore,
-  slug: string
+  slug: string,
+  fetchLectures: boolean = true
 ): Promise<Course | undefined> => {
    if (!db) {
     console.error("Firestore instance is not available in getCourseBySlug");
@@ -73,11 +74,16 @@ export const getCourseBySlug = async (
     const data = doc.data() as CourseSchema;
     if (slugify(data.title) === slug) {
       const image = PlaceHolderImages.find((img) => img.id === data.imageId);
-      const lecturesSnapshot = await getDocs(collection(db, 'courses', doc.id, 'lectures'));
-      const lectures = lecturesSnapshot.docs.map(lectureDoc => ({
-        ...(lectureDoc.data() as LectureSchema),
-        id: lectureDoc.id,
-      }));
+      
+      let lectures: Lecture[] = [];
+      if (fetchLectures) {
+        const lecturesSnapshot = await getDocs(collection(db, 'courses', doc.id, 'lectures'));
+        lectures = lecturesSnapshot.docs.map(lectureDoc => ({
+          ...(lectureDoc.data() as LectureSchema),
+          id: lectureDoc.id,
+        }));
+      }
+
 
       return {
         ...data,

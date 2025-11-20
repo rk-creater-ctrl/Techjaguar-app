@@ -1,7 +1,7 @@
 'use client';
 
 import { getCourseBySlug, type Course } from '@/lib/data';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,11 +11,24 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, PlayCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, Loader2, Trash2, Pencil } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { useEffect, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { deleteCourse } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CourseDetailPage({
   params,
@@ -23,8 +36,14 @@ export default function CourseDetailPage({
   params: { slug: string };
 }) {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const router = useRouter();
+  const { toast } = useToast();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // In a real app, this would be a custom claim or role from your database.
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -41,6 +60,26 @@ export default function CourseDetailPage({
 
     fetchCourse();
   }, [firestore, params.slug]);
+  
+  const handleDelete = async () => {
+    if (!firestore || !course) return;
+    try {
+      await deleteCourse(firestore, course.id);
+      toast({
+        title: "Course Deleted",
+        description: "The course has been successfully deleted.",
+      });
+      router.push('/courses');
+      router.refresh();
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: error.message || "Could not delete the course.",
+      });
+    }
+  }
+
 
   if (loading || !course) {
     return (
@@ -64,9 +103,37 @@ export default function CourseDetailPage({
           {course.title}
         </h1>
         <div className="hidden items-center gap-2 md:ml-auto md:flex">
-          <Button variant="outline" size="sm">
-            Share
-          </Button>
+          {isInstructor && (
+            <>
+              <Link href={`/courses/${course.slug}/edit`}>
+                 <Button variant="outline" size="sm">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete this
+                      course and remove its data from our servers.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
           <Button size="sm">Start Learning</Button>
         </div>
       </div>

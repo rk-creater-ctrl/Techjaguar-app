@@ -1,26 +1,52 @@
 'use server';
-import { collection, doc, setDoc, Firestore, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, Firestore, serverTimestamp, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Course, RecordedClass, LiveSession } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function createCourse(firestore: Firestore, courseData: Course) {
   try {
     const courseRef = doc(firestore, 'courses', courseData.id);
     await setDoc(courseRef, courseData);
   } catch (error: any) {
-    // Create a rich, contextual error. In a server action, we can't emit
-    // to the client-side emitter, so we'll re-throw a more informative error.
     const permissionError = new FirestorePermissionError({
       path: `courses/${courseData.id}`,
       operation: 'create',
       requestResourceData: courseData,
     });
-    
-    // We're throwing the custom error so the UI can catch and display it.
     throw permissionError;
   }
 }
+
+export async function updateCourse(firestore: Firestore, courseId: string, courseData: Partial<Course>) {
+    try {
+        const courseRef = doc(firestore, 'courses', courseId);
+        await updateDoc(courseRef, courseData);
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: `courses/${courseId}`,
+            operation: 'update',
+            requestResourceData: courseData,
+        });
+        throw permissionError;
+    }
+}
+
+export async function deleteCourse(firestore: Firestore, courseId: string) {
+    try {
+        const courseRef = doc(firestore, 'courses', courseId);
+        await deleteDoc(courseRef);
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: `courses/${courseId}`,
+            operation: 'delete',
+        });
+        throw permissionError;
+    }
+}
+
 
 export async function createClass(firestore: Firestore, classData: Omit<RecordedClass, 'createdAt'>) {
     try {
@@ -50,7 +76,8 @@ export async function startLiveSession(firestore: Firestore, sessionData: Omit<L
         // Using addDoc to let Firestore generate the ID
         const docRef = await addDoc(collectionRef, dataWithTimestamp);
         return docRef.id;
-    } catch (error: any) {
+    } catch (error: any)
+{
         const permissionError = new FirestorePermissionError({
             path: `liveSessions`,
             operation: 'create',

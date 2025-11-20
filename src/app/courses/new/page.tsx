@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CreateCourseForm } from './create-course-form';
+import { CourseForm } from './create-course-form';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -44,7 +44,7 @@ export default function CreateCoursePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CreateCourseForm />
+            <CourseForm />
           </CardContent>
         </Card>
       </div>

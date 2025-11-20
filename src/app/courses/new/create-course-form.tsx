@@ -27,8 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { createCourse } from '@/lib/actions';
+import { createCourse, updateCourse } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
+import type { Course } from '@/lib/schema';
 
 const courseSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -42,15 +43,27 @@ const courseSchema = z.object({
 
 type CourseFormValues = z.infer<typeof courseSchema>;
 
-export function CreateCourseForm() {
+interface CreateCourseFormProps {
+  course?: Course;
+}
+
+export function CourseForm({ course }: CreateCourseFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
 
+  const isEditing = !!course;
+
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
-    defaultValues: {
+    defaultValues: isEditing ? {
+      title: course.title,
+      description: course.description,
+      price: course.price,
+      isFree: course.isFree,
+      imageId: course.imageId,
+    } : {
       title: '',
       description: '',
       price: 0,
@@ -61,35 +74,46 @@ export function CreateCourseForm() {
   const isFree = form.watch('isFree');
 
   const onSubmit = async (data: CourseFormValues) => {
-    if (!user) {
+    if (!user || !firestore) {
         toast({
             variant: 'destructive',
             title: 'Authentication Error',
-            description: 'You must be logged in to create a course.',
+            description: 'You must be logged in to perform this action.',
         });
         return;
     }
     
     try {
-      await createCourse(firestore, {
-        ...data,
-        id: uuidv4(),
-        instructorId: user.uid,
-        categoryId: 'general', // Placeholder
-        author: user.displayName || 'Unnamed Instructor',
-      });
-
-      toast({
-        title: 'Course Created',
-        description: 'The course has been created successfully.',
-      });
+      if (isEditing && course.id) {
+        await updateCourse(firestore, course.id, {
+          ...data,
+          author: user.displayName || 'Unnamed Instructor',
+        });
+        toast({
+          title: 'Course Updated',
+          description: 'The course has been updated successfully.',
+        });
+      } else {
+        await createCourse(firestore, {
+          ...data,
+          id: uuidv4(),
+          instructorId: user.uid,
+          categoryId: 'general', // Placeholder
+          author: user.displayName || 'Unnamed Instructor',
+        });
+        toast({
+          title: 'Course Created',
+          description: 'The course has been created successfully.',
+        });
+      }
+      
       router.push('/courses');
-      router.refresh(); // Refresh the page to show the new course
+      router.refresh();
     } catch (error: any) {
        toast({
         variant: 'destructive',
         title: 'Uh oh! Something went wrong.',
-        description: error.message || 'Could not create course.',
+        description: error.message || 'Could not save course.',
       });
     }
   };
@@ -209,7 +233,7 @@ export function CreateCourseForm() {
         </div>
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Creating...' : 'Create Course'}
+          {form.formState.isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Course')}
         </Button>
       </form>
     </Form>
