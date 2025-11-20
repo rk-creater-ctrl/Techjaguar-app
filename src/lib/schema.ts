@@ -61,3 +61,11 @@ export interface LiveSession {
     isFree: boolean;
     meetingUrl: string;
 }
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'inactive';
+}

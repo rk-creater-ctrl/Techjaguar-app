@@ -9,14 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, where } from 'firebase/firestore';
-import { useCollection, WithId } from '@/firebase/firestore/use-collection';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,17 +20,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
-import { Clipboard, Pencil } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import React, { useRef, useActionState } from 'react';
-import { setInstructorAction } from './actions';
+import { Pencil } from 'lucide-react';
+import React, { useRef } from 'react';
+import Link from 'next/link';
 
-interface Subscription {
-  id: string;
-  status: 'active' | 'inactive' | 'cancelled';
-  startDate: { toDate: () => Date };
-  endDate: { toDate: () => Date };
-}
 
 const profileFormSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -97,71 +86,6 @@ function ProfileEditForm() {
             </Form>
         </Card>
     );
-}
-
-
-function SubscriptionDetails({ userId }: { userId: string }) {
-  const firestore = useFirestore();
-
-  const subscriptionsQuery = useMemoFirebase(() => {
-    if (!firestore || !userId) return null;
-    return query(collection(firestore, 'users', userId, 'subscriptions'));
-  }, [firestore, userId]);
-  
-  const { data: subscriptions, isLoading, error } = useCollection<Subscription>(subscriptionsQuery);
-
-  if (isLoading) {
-    return <Skeleton className="h-24 w-full" />;
-  }
-
-  if (error) {
-    return <p className="text-destructive">Error loading subscription.</p>;
-  }
-
-  const subscription = subscriptions?.[0];
-
-  if (!subscription) {
-    return (
-      <CardContent>
-        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-            <p className="text-muted-foreground mb-4">No active subscription found.</p>
-            <Button>Upgrade to Pro</Button>
-        </div>
-      </CardContent>
-    );
-  }
-
-  const getBadgeVariant = (status: Subscription['status']) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'inactive':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
-  return (
-    <CardContent className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <p className="font-semibold">Status</p>
-        <Badge variant={getBadgeVariant(subscription.status)} className="capitalize">{subscription.status}</Badge>
-      </div>
-      <Separator />
-      <div className="flex items-center justify-between">
-        <p className="font-semibold">Start Date</p>
-        <p>{subscription.startDate.toDate().toLocaleDateString()}</p>
-      </div>
-      <Separator />
-      <div className="flex items-center justify-between">
-        <p className="font-semibold">End Date</p>
-        <p>{subscription.endDate.toDate().toLocaleDateString()}</p>
-      </div>
-    </CardContent>
-  );
 }
 
 export default function ProfilePage() {
@@ -260,6 +184,20 @@ export default function ProfilePage() {
       
       <ProfileEditForm />
 
+       <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">Subscription</CardTitle>
+          <CardDescription>Manage your billing and subscription details.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <p className="text-muted-foreground">View your current plan and payment history.</p>
+        </CardContent>
+        <CardFooter className="border-t pt-6">
+            <Link href="/billing">
+                <Button>Manage Subscription</Button>
+            </Link>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
