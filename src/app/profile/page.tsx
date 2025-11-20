@@ -26,7 +26,8 @@ import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
 import { Clipboard, Pencil } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import React, { useRef } from 'react';
+import React, { useRef, useActionState } from 'react';
+import { setInstructorAction } from './actions';
 
 interface Subscription {
   id: string;
@@ -163,6 +164,76 @@ function SubscriptionDetails({ userId }: { userId: string }) {
   );
 }
 
+function AdminSetupCard() {
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [state, formAction, isPending] = useActionState(setInstructorAction, { message: '' });
+
+    const copyToClipboard = () => {
+        if (user?.uid) {
+        navigator.clipboard.writeText(user.uid);
+        toast({
+            title: "Copied to Clipboard",
+            description: "Your User ID has been copied.",
+        });
+        }
+    };
+    
+    React.useEffect(() => {
+        if (state.message === 'success') {
+            toast({
+                title: "Admin Set!",
+                description: "This user is now the instructor. The page will now reload.",
+            });
+            setTimeout(() => window.location.reload(), 2000);
+        } else if (state.message.startsWith('Error:')) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: state.message,
+            });
+        }
+    }, [state, toast]);
+
+    if (!user) return null;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Admin Setup</CardTitle>
+                <CardDescription>
+                    Use these tools to configure the admin/instructor user for the app.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="uid">Your User ID</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="uid" readOnly value={user.uid} className="bg-muted" />
+                        <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                            <Clipboard className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                    <p className="text-sm font-medium">Make This User an Admin</p>
+                    <p className="text-sm text-muted-foreground">
+                        Click this button to set the currently logged-in user as the site instructor. This will grant access to create courses and go live.
+                    </p>
+                     <form action={formAction}>
+                        <input type="hidden" name="uid" value={user.uid} />
+                        <Button type="submit" disabled={isPending}>
+                            {isPending ? 'Saving...' : 'Make this user an Admin'}
+                        </Button>
+                    </form>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
@@ -176,16 +247,6 @@ export default function ProfilePage() {
       return names[0][0] + names[names.length - 1][0];
     }
     return name[0];
-  };
-
-  const copyToClipboard = () => {
-    if (user?.uid) {
-      navigator.clipboard.writeText(user.uid);
-      toast({
-        title: "Copied to Clipboard",
-        description: "Your User ID has been copied.",
-      });
-    }
   };
 
   const handleAvatarClick = () => {
@@ -265,23 +326,11 @@ export default function ProfilePage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-            <div className="space-y-2">
-                <Label htmlFor="uid">User ID (for Admin Setup)</Label>
-                 <div className="flex items-center gap-2">
-                    <Input id="uid" readOnly value={user.uid} className="bg-muted" />
-                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
-                        <Clipboard className="h-4 w-4" />
-                    </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                    Copy this ID and paste it into your <code>.env</code> file as <code>NEXT_PUBLIC_INSTRUCTOR_UID</code> to gain admin privileges.
-                </p>
-            </div>
-        </CardContent>
       </Card>
       
       <ProfileEditForm />
+
+      <AdminSetupCard />
 
     </div>
   );
