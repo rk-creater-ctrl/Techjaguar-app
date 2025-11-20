@@ -139,7 +139,7 @@ export function CreateClassForm() {
         <FormItem>
             <FormLabel>Video File</FormLabel>
             <FormControl>
-                <>
+                <div>
                     <Input 
                         type="file" 
                         className="hidden"
@@ -155,7 +155,7 @@ export function CreateClassForm() {
                         <Upload className="mr-2 h-4 w-4" />
                         Choose Video
                     </Button>
-                </>
+                </div>
             </FormControl>
              <FormDescription>
                 {fileName ? `Selected file: ${fileName}` : "Select a video file to upload."}
