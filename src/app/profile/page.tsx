@@ -239,6 +239,10 @@ export default function ProfilePage() {
   const auth = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // This is a one-time setup feature. It should only be shown if the instructor is NOT set.
+  const isInstructorSet = !!process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '';
@@ -329,8 +333,8 @@ export default function ProfilePage() {
       </Card>
       
       <ProfileEditForm />
-
-      <AdminSetupCard />
+      
+      {!isInstructorSet && <AdminSetupCard />}
 
     </div>
   );
