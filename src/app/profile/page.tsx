@@ -13,16 +13,19 @@ import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
-import { Pencil } from 'lucide-react';
-import React, { useRef } from 'react';
+import { Pencil, AlertTriangle, Copy } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useActionState } from 'react';
+import { setInstructorAction, FormState } from './actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const profileFormSchema = z.object({
@@ -30,6 +33,76 @@ const profileFormSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+
+function AdminSetupCard({ uid }: { uid: string }) {
+  const [state, formAction, isPending] = useActionState<FormState, FormData>(setInstructorAction, { message: '' });
+  const { toast } = useToast();
+  const hasInstructorBeenSet = process.env.NEXT_PUBLIC_INSTRUCTOR_UID && process.env.NEXT_PUBLIC_INSTRUCTOR_UID !== 'YOUR_INSTRUCTOR_FIREBASE_UID';
+
+  useEffect(() => {
+    if (state.message === 'success') {
+      toast({
+        title: "Instructor Set!",
+        description: "You are now the instructor. The page will reload to apply changes.",
+      });
+      // A full page reload is needed to read the new .env variable
+      window.location.reload();
+    } else if (state.message.startsWith('Error:')) {
+      toast({
+        variant: 'destructive',
+        title: 'An Error Occurred',
+        description: state.message,
+      });
+    }
+  }, [state, toast]);
+  
+  if (hasInstructorBeenSet) {
+    return null;
+  }
+
+  const copyUidToClipboard = () => {
+    navigator.clipboard.writeText(uid);
+    toast({
+      title: "UID Copied!",
+      description: "Your User ID has been copied to the clipboard.",
+    });
+  };
+
+  return (
+     <Card className="border-destructive">
+      <CardHeader>
+        <div className="flex items-center gap-4">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+          <div>
+            <CardTitle className="font-headline text-destructive">Admin Setup Required</CardTitle>
+            <CardDescription>
+              To complete the application setup, an instructor must be assigned.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-4">Your User ID (UID) is:</p>
+        <div className="flex items-center gap-2 p-3 rounded-md bg-muted">
+            <code className="text-sm font-semibold flex-grow">{uid}</code>
+            <Button variant="ghost" size="icon" onClick={copyUidToClipboard}>
+                <Copy className="h-4 w-4" />
+            </Button>
+        </div>
+        <p className="mt-4 text-muted-foreground text-sm">
+           To make yourself the instructor, copy this UID and add it to a file named <code className="font-semibold bg-muted px-1 py-0.5 rounded-sm">.env</code> in the root of the project with the following content:
+        </p>
+         <pre className="mt-2 text-sm p-3 rounded-md bg-muted overflow-x-auto">
+          <code>{`NEXT_PUBLIC_INSTRUCTOR_UID=${uid}`}</code>
+        </pre>
+         <p className="mt-4 text-muted-foreground text-sm">
+          After saving the <code className="font-semibold bg-muted px-1 py-0.5 rounded-sm">.env</code> file, you will need to restart the development server for the change to take effect.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 
 function ProfileEditForm() {
@@ -150,6 +223,8 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+       <AdminSetupCard uid={user.uid} />
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
