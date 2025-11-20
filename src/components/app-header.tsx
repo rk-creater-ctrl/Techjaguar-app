@@ -6,6 +6,7 @@ import {
   Radio,
   Search,
   PanelLeft,
+  Video,
 } from 'lucide-react';
 import {
   Sheet,
@@ -54,6 +55,13 @@ export function AppHeader() {
             >
               <BookOpen className="h-5 w-5" />
               Courses
+            </Link>
+             <Link
+              href="/classes"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Video className="h-5 w-5" />
+              Classes
             </Link>
             <Link
               href="/recommendations"

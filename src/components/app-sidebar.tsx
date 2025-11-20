@@ -1,7 +1,7 @@
 
 'use client';
 import Link from 'next/link';
-import { Home, BookOpen, Sparkles, Radio, Star } from 'lucide-react';
+import { Home, BookOpen, Sparkles, Radio, Star, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -37,6 +37,10 @@ export function AppSidebar() {
             <NavLink href="/courses">
               <BookOpen className="h-4 w-4" />
               Courses
+            </NavLink>
+             <NavLink href="/classes">
+              <Video className="h-4 w-4" />
+              Classes
             </NavLink>
             <NavLink href="/recommendations">
               <Sparkles className="h-4 w-4" />
