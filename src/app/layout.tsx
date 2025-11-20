@@ -6,7 +6,7 @@ import { AuthGate } from '@/components/auth-gate';
 import { ChatbotWidget } from '@/components/chatbot-widget';
 
 export const metadata: Metadata = {
-  title: 'Tech Learnings - Your Universe of Learning',
+  title: 'TechJaguar - Your Universe of Learning',
   description: 'Live classes, recorded lectures, notes, and personalized learning paths.',
 };
 

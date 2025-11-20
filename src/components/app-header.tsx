@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
-import { TechLearningsLogo } from '@/components/icons';
+import { TechJaguarLogo } from '@/components/icons';
 
 export function AppHeader() {
   return (
@@ -33,8 +33,8 @@ export function AppHeader() {
               href="#"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <TechLearningsLogo className="h-5 w-5 transition-all group-hover:scale-110" />
-              <span className="sr-only">Tech Learnings</span>
+              <TechJaguarLogo className="h-5 w-5 transition-all group-hover:scale-110" />
+              <span className="sr-only">TechJaguar</span>
             </Link>
             <Link
               href="/"

@@ -147,7 +147,7 @@ export function ChatbotWidget() {
       >
         <div className="flex items-center justify-between p-3 border-b">
           <h3 className="font-headline flex items-center gap-2">
-            <Bot /> Academy Assistant
+            <Bot /> TechJaguar Assistant
           </h3>
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
