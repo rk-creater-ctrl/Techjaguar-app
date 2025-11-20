@@ -1,6 +1,6 @@
 'use server';
-import { collection, doc, setDoc, Firestore } from 'firebase/firestore';
-import type { Course } from './schema';
+import { collection, doc, setDoc, Firestore, serverTimestamp } from 'firebase/firestore';
+import type { Course, RecordedClass } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -20,4 +20,22 @@ export async function createCourse(firestore: Firestore, courseData: Course) {
     // We're throwing the custom error so the UI can catch and display it.
     throw permissionError;
   }
+}
+
+export async function createClass(firestore: Firestore, classData: Omit<RecordedClass, 'createdAt'>) {
+    try {
+        const classRef = doc(firestore, 'classes', classData.id);
+        const dataWithTimestamp = {
+            ...classData,
+            createdAt: serverTimestamp(),
+        };
+        await setDoc(classRef, dataWithTimestamp);
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: `classes/${classData.id}`,
+            operation: 'create',
+            requestResourceData: classData,
+        });
+        throw permissionError;
+    }
 }

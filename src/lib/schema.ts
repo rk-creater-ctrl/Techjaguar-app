@@ -41,3 +41,12 @@ export interface Lecture {
   duration: number; // in minutes
   isFree: boolean;
 }
+
+export interface RecordedClass {
+  id: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  instructorId: string;
+  createdAt: any; // Firestore timestamp
+}

@@ -15,6 +15,8 @@
  *   is not explicitly defined, implying it should be restricted.
  * - /courses/{courseId}: Course information, publicly readable, but writable
  *   only by the instructor who owns the course.
+ * - /classes/{classId}: Recorded classes, publicly readable, but writable
+ *   only by the instructor who created it.
  * - /courses/{courseId}/lectures/{lectureId}: Lectures for each course, inheriting
  *   the access control of the parent course.
  * - /users/{userId}/subscriptions/{subscriptionId}: User subscription information,
@@ -68,10 +70,10 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces that the instructorId of a course matches the authenticated user.
-     * @returns {boolean} True if the course instructorId matches the authenticated user's UID, false otherwise.
+     * @description Enforces that the instructorId of a course or class matches the authenticated user.
+     * @returns {boolean} True if the instructorId matches the authenticated user's UID, false otherwise.
      */
-    function isCourseInstructor() {
+    function isResourceInstructor() {
         return isSignedIn() && request.resource.data.instructorId == request.auth.uid;
     }
 
@@ -80,7 +82,7 @@ service cloud.firestore {
      * @param {string} instructorId - The instructor ID of the course.
      * @returns {boolean} True if the user is the instructor, false otherwise.
      */
-    function isCourseOwnedByInstructor(instructorId) {
+    function isOwnedByInstructor(instructorId) {
       return isSignedIn() && instructorId == request.auth.uid;
     }
 
@@ -162,9 +164,28 @@ service cloud.firestore {
     match /courses/{courseId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isCourseInstructor();
-      allow update: if resource != null && isCourseOwnedByInstructor(resource.data.instructorId);
-      allow delete: if resource != null && isCourseOwnedByInstructor(resource.data.instructorId);
+      allow create: if isResourceInstructor();
+      allow update: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+      allow delete: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+    }
+    
+    /**
+     * @description
+     *  - Allows anyone to read recorded classes, but only the instructor can create, update, or delete them.
+     * @path /classes/{classId}
+     * @allow (get) Any user can get recorded class information.
+     * @allow (list) Any user can list recorded classes.
+     * @allow (create) Instructor can create a recorded class.
+     * @allow (update) Instructor who owns the class can update it.
+     * @allow (delete) Instructor who owns the class can delete it.
+     * @principle Public read access with owner-only writes.
+     */
+    match /classes/{classId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isResourceInstructor();
+        allow update: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+        allow delete: if resource != null && isOwnedByInstructor(resource.data.instructorId);
     }
 
     /**
