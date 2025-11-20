@@ -24,8 +24,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
-import { Clipboard } from 'lucide-react';
+import { Clipboard, Pencil } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import React, { useRef } from 'react';
 
 interface Subscription {
   id: string;
@@ -36,7 +37,6 @@ interface Subscription {
 
 const profileFormSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  photoURL: z.string().url({ message: "Please enter a valid URL." }).or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -51,14 +51,12 @@ function ProfileEditForm() {
         resolver: zodResolver(profileFormSchema),
         defaultValues: {
             displayName: user?.displayName || '',
-            photoURL: user?.photoURL || '',
         },
     });
 
     function onSubmit(data: ProfileFormValues) {
         updateUserProfile(auth, {
             displayName: data.displayName,
-            photoURL: data.photoURL,
         });
         toast({
             title: "Profile Updated",
@@ -70,7 +68,7 @@ function ProfileEditForm() {
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Edit Profile</CardTitle>
-                <CardDescription>Update your display name and profile picture.</CardDescription>
+                <CardDescription>Update your display name.</CardDescription>
             </CardHeader>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -83,19 +81,6 @@ function ProfileEditForm() {
                                     <FormLabel>Display Name</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Your Name" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="photoURL"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Photo URL</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="https://example.com/photo.jpg" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -180,7 +165,9 @@ function SubscriptionDetails({ userId }: { userId: string }) {
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '';
@@ -197,6 +184,26 @@ export default function ProfilePage() {
       toast({
         title: "Copied to Clipboard",
         description: "Your User ID has been copied.",
+      });
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload the file to a service like Firebase Storage
+      // and get the URL back. Here, we'll simulate this by using a placeholder.
+      const placeholderUrl = 'https://i.pravatar.cc/150?u=' + user?.uid + Date.now();
+      
+      updateUserProfile(auth, { photoURL: placeholderUrl });
+      
+      toast({
+        title: "Profile Picture Updating",
+        description: "Your new profile picture is being saved.",
       });
     }
   };
@@ -231,12 +238,27 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24 border-2 border-primary">
-              <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} />
-              <AvatarFallback className="text-3xl">
-                {getInitials(user.displayName)}
-              </AvatarFallback>
-            </Avatar>
+             <div className="relative group">
+              <Avatar className="h-24 w-24 border-2 border-primary">
+                <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} />
+                <AvatarFallback className="text-3xl">
+                  {getInitials(user.displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <button 
+                onClick={handleAvatarClick}
+                className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Pencil className="h-8 w-8 text-white" />
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/png, image/jpeg, image/gif"
+              />
+            </div>
             <div>
               <CardTitle className="text-3xl font-headline">{user.displayName}</CardTitle>
               <CardDescription className="text-lg">{user.email}</CardDescription>
