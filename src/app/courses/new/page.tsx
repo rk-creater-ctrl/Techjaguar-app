@@ -15,9 +15,8 @@ export default function CreateCoursePage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // For now, we are treating any logged-in user as an instructor.
-  // In a real-world scenario, you would have a proper role check.
-  const isInstructor = !!user;
+  // In a real app, this would be a custom claim or role from your database.
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
 
   useEffect(() => {
     if (!isUserLoading && !isInstructor) {

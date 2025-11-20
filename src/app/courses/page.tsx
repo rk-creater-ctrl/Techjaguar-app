@@ -11,13 +11,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CoursesPage() {
   const firestore = useFirestore();
-  const { user } = useUser(); // We'll use this to check for instructor role later
+  const { user } = useUser();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // For now, we'll just use a mock instructor check.
-  // In a real app, this would come from custom claims or a user role in Firestore.
-  const isInstructor = !!user; 
+  // In a real app, this would be a custom claim or role from your database.
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -28,7 +27,9 @@ export default function CoursesPage() {
       setLoading(false);
     };
 
-    fetchCourses();
+    if (firestore) {
+      fetchCourses();
+    }
   }, [firestore]);
 
 

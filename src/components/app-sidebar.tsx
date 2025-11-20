@@ -1,3 +1,5 @@
+
+'use client';
 import Link from 'next/link';
 import { Home, BookOpen, Sparkles, Radio, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,8 +12,13 @@ import {
 } from '@/components/ui/card';
 import { TechJaguarLogo } from './icons';
 import { NavLink } from './nav-link';
+import { useUser } from '@/firebase';
 
 export function AppSidebar() {
+  const { user } = useUser();
+  // In a real app, this would be a custom claim or role from your database.
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+
   return (
     <div className="hidden border-r bg-card md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
@@ -35,10 +42,12 @@ export function AppSidebar() {
               <Sparkles className="h-4 w-4" />
               For You
             </NavLink>
-            <NavLink href="/go-live">
-              <Radio className="h-4 w-4" />
-              Go Live
-            </NavLink>
+            {isInstructor && (
+              <NavLink href="/go-live">
+                <Radio className="h-4 w-4" />
+                Go Live
+              </NavLink>
+            )}
           </nav>
         </div>
         <div className="mt-auto p-4">

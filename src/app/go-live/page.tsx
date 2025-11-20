@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Video, VideoOff, AlertTriangle, Disc, Square } from 'lucide-react';
+import { Video, VideoOff, AlertTriangle, Disc, Square, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+
 
 interface SavedRecording {
   name: string;
@@ -15,6 +18,8 @@ interface SavedRecording {
 }
 
 export default function GoLivePage() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -26,7 +31,17 @@ export default function GoLivePage() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+
   useEffect(() => {
+    if (!isUserLoading && !isInstructor) {
+      router.replace('/');
+    }
+  }, [isUserLoading, isInstructor, router]);
+
+  useEffect(() => {
+    if (!isInstructor) return;
+
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('Media Devices API not supported.');
@@ -63,7 +78,15 @@ export default function GoLivePage() {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [toast]);
+  }, [toast, isInstructor]);
+
+  if (isUserLoading || !isInstructor) {
+    return (
+       <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const handleToggleStreaming = () => {
     if (isStreaming) {
@@ -71,11 +94,9 @@ export default function GoLivePage() {
         handleStopRecording();
       }
       setIsStreaming(false);
-      // Don't stop tracks here if we want to restart the stream
     } else {
       if (hasCameraPermission && streamRef.current) {
         if (videoRef.current) {
-          // Re-attach stream if it's not already
            if (!videoRef.current.srcObject) {
              videoRef.current.srcObject = streamRef.current;
            }

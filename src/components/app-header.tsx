@@ -16,8 +16,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 import { TechJaguarLogo } from '@/components/icons';
+import { useUser } from '@/firebase';
 
 export function AppHeader() {
+  const { user } = useUser();
+  // In a real app, this would be a custom claim or role from your database.
+  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <Sheet>
@@ -57,13 +62,15 @@ export function AppHeader() {
               <Sparkles className="h-5 w-5" />
               For You
             </Link>
-            <Link
-              href="/go-live"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Radio className="h-5 w-5" />
-              Go Live
-            </Link>
+            {isInstructor && (
+              <Link
+                href="/go-live"
+                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <Radio className="h-5 w-5" />
+                Go Live
+              </Link>
+            )}
           </nav>
         </SheetContent>
       </Sheet>
