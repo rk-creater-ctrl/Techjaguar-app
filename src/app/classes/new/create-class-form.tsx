@@ -21,7 +21,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { createClass } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
 import { Upload } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const classSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -37,7 +37,7 @@ export function CreateClassForm() {
   const firestore = useFirestore();
   const { user } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = React.useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
