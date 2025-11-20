@@ -20,11 +20,13 @@ import { useRouter } from 'next/navigation';
 import { useFirestore, useUser } from '@/firebase';
 import { createClass } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
+import { Upload } from 'lucide-react';
+import { useRef } from 'react';
 
 const classSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
-  videoUrl: z.string().url('Please enter a valid URL.'),
+  // videoUrl is now handled separately
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -34,13 +36,14 @@ export function CreateClassForm() {
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
       title: '',
       description: '',
-      videoUrl: '',
     },
   });
 
@@ -53,10 +56,24 @@ export function CreateClassForm() {
       });
       return;
     }
+    
+    if (!fileInputRef.current?.files?.[0]) {
+        toast({
+            variant: 'destructive',
+            title: 'Validation Error',
+            description: 'Please select a video file to upload.',
+        });
+        return;
+    }
 
     try {
+      // In a real app, you would upload the file to cloud storage (e.g., Firebase Storage)
+      // and get a public URL. For now, we'll use a placeholder.
+      const placeholderVideoUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+
       await createClass(firestore, {
         ...data,
+        videoUrl: placeholderVideoUrl,
         id: uuidv4(),
         instructorId: user.uid,
       });
@@ -118,25 +135,34 @@ export function CreateClassForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="videoUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Video URL</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Paste the full URL of the video (e.g., from YouTube, Vimeo).
+        
+        <FormItem>
+            <FormLabel>Video File</FormLabel>
+            <FormControl>
+                <>
+                    <Input 
+                        type="file" 
+                        className="hidden"
+                        ref={fileInputRef}
+                        accept="video/*"
+                        onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+                    />
+                    <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Choose Video
+                    </Button>
+                </>
+            </FormControl>
+             <FormDescription>
+                {fileName ? `Selected file: ${fileName}` : "Select a video file to upload."}
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormMessage />
+        </FormItem>
+
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? 'Adding...' : 'Add Class'}
