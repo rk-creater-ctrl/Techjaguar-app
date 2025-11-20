@@ -17,6 +17,8 @@
  *   only by the instructor who owns the course.
  * - /classes/{classId}: Recorded classes, publicly readable, but writable
  *   only by the instructor who created it.
+ * - /liveSessions/{sessionId}: Live session information, publicly readable,
+ *   but only writable by the instructor.
  * - /courses/{courseId}/lectures/{lectureId}: Lectures for each course, inheriting
  *   the access control of the parent course.
  * - /users/{userId}/subscriptions/{subscriptionId}: User subscription information,
@@ -186,6 +188,25 @@ service cloud.firestore {
         allow create: if isResourceInstructor();
         allow update: if resource != null && isOwnedByInstructor(resource.data.instructorId);
         allow delete: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+    }
+
+    /**
+     * @description
+     *  - Allows anyone to read live session details. Only instructors can create them.
+     * @path /liveSessions/{sessionId}
+     * @allow (get) Any user can view live session details.
+     * @allow (list) Any user can list live sessions.
+     * @allow (create) An instructor can start a new live session.
+     * @deny (update) Live sessions cannot be updated.
+     * @deny (delete) Live sessions cannot be deleted through the client.
+     * @principle Public read access with owner-only creation.
+     */
+    match /liveSessions/{sessionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isResourceInstructor();
+      allow update: if false; // Sessions are immutable for now
+      allow delete: if false; // Deletions should be handled by a backend process
     }
 
     /**

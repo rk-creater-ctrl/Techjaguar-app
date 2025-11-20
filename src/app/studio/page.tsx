@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Video, VideoOff, Disc, Square, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { startLiveSession } from '@/lib/actions';
 
 
 interface SavedRecording {
@@ -18,11 +19,13 @@ interface SavedRecording {
 
 export default function StudioPage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingName, setRecordingName] = useState('');
+  const [sessionName, setSessionName] = useState('');
   const [savedRecordings, setSavedRecordings] = useState<SavedRecording[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -79,7 +82,7 @@ export default function StudioPage() {
     };
   }, [toast, isInstructor]);
 
-  if (isUserLoading || !isInstructor) {
+  if (isUserLoading || !isInstructor || !firestore) {
     return (
        <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -87,20 +90,49 @@ export default function StudioPage() {
     );
   }
 
-  const handleToggleStreaming = () => {
+  const handleGoLive = async () => {
     if (isStreaming) {
-      if (isRecording) {
+       if (isRecording) {
         handleStopRecording();
       }
       setIsStreaming(false);
+      // Here you would add logic to end the live session in Firestore
     } else {
+       if (!sessionName) {
+        toast({
+          variant: 'destructive',
+          title: 'Session Name Required',
+          description: 'Please enter a name for your live session.',
+        });
+        return;
+      }
       if (hasCameraPermission && streamRef.current) {
         if (videoRef.current) {
            if (!videoRef.current.srcObject) {
              videoRef.current.srcObject = streamRef.current;
            }
         }
-        setIsStreaming(true);
+        try {
+          await startLiveSession(firestore, {
+            title: sessionName,
+            description: 'Live session in progress',
+            instructorId: user.uid,
+            isFree: false, // All live sessions are premium
+            meetingUrl: '#', // Placeholder
+          });
+          setIsStreaming(true);
+           toast({
+            title: 'You are now live!',
+            description: 'Your session has started and users will be notified.',
+          });
+        } catch (error: any) {
+            toast({
+              variant: 'destructive',
+              title: 'Could not start session',
+              description: error.message || 'There was a problem starting the live session.',
+            });
+        }
+
       } else if (hasCameraPermission === false) {
         toast({
           variant: 'destructive',
@@ -137,7 +169,7 @@ export default function StudioPage() {
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const newRecording: SavedRecording = {
-          name: recordingName || `Recording ${new Date().toLocaleString()}`,
+          name: recordingName || sessionName || `Recording ${new Date().toLocaleString()}`,
           url: url,
           date: new Date().toLocaleString(),
         };
@@ -209,32 +241,41 @@ export default function StudioPage() {
                         </div>
                     )}
                 </div>
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <Button size="lg" onClick={handleToggleStreaming} disabled={hasCameraPermission === null || hasCameraPermission === false}>
-                    {isStreaming ? (
-                        <>
-                        <VideoOff className="mr-2" /> Stop Streaming
-                        </>
-                    ) : (
-                        <>
-                        <Video className="mr-2" /> Go Live
-                        </>
-                    )}
-                    </Button>
+                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Input 
+                            placeholder="Enter session name..." 
+                            value={sessionName}
+                            onChange={(e) => setSessionName(e.target.value)}
+                            disabled={isStreaming}
+                            className="flex-grow"
+                        />
+                        <Button size="lg" onClick={handleGoLive} disabled={hasCameraPermission !== true}>
+                        {isStreaming ? (
+                            <>
+                            <VideoOff className="mr-2" /> Stop
+                            </>
+                        ) : (
+                            <>
+                            <Video className="mr-2" /> Go Live
+                            </>
+                        )}
+                        </Button>
+                    </div>
                     <div className="flex items-center gap-2">
                         <Input 
-                            placeholder="Enter recording name..." 
+                            placeholder="Recording name (optional)..." 
                             value={recordingName}
                             onChange={(e) => setRecordingName(e.target.value)}
                             disabled={!isStreaming || isRecording}
                             className="w-full sm:w-auto"
                         />
                         {isRecording ? (
-                            <Button size="lg" onClick={handleStopRecording} variant="destructive">
+                            <Button onClick={handleStopRecording} variant="destructive">
                                 <Square className="mr-2" /> Stop
                             </Button>
                         ) : (
-                            <Button size="lg" onClick={handleStartRecording} disabled={!isStreaming}>
+                            <Button onClick={handleStartRecording} disabled={!isStreaming}>
                                 <Disc className="mr-2" /> Record
                             </Button>
                         )}

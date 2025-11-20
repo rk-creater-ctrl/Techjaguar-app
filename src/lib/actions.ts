@@ -1,6 +1,6 @@
 'use server';
-import { collection, doc, setDoc, Firestore, serverTimestamp } from 'firebase/firestore';
-import type { Course, RecordedClass } from './schema';
+import { collection, doc, setDoc, Firestore, serverTimestamp, addDoc } from 'firebase/firestore';
+import type { Course, RecordedClass, LiveSession } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -35,6 +35,26 @@ export async function createClass(firestore: Firestore, classData: Omit<Recorded
             path: `classes/${classData.id}`,
             operation: 'create',
             requestResourceData: classData,
+        });
+        throw permissionError;
+    }
+}
+
+export async function startLiveSession(firestore: Firestore, sessionData: Omit<LiveSession, 'id' | 'scheduledTime'>) {
+    try {
+        const collectionRef = collection(firestore, 'liveSessions');
+        const dataWithTimestamp = {
+            ...sessionData,
+            scheduledTime: serverTimestamp(),
+        };
+        // Using addDoc to let Firestore generate the ID
+        const docRef = await addDoc(collectionRef, dataWithTimestamp);
+        return docRef.id;
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: `liveSessions`,
+            operation: 'create',
+            requestResourceData: sessionData,
         });
         throw permissionError;
     }

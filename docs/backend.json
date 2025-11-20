@@ -291,7 +291,54 @@
         "instructorId",
         "createdAt"
       ]
-    }
+    },
+    "LiveSession": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "LiveSession",
+        "type": "object",
+        "description": "Represents an active or upcoming live streaming session.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the live session."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the live session."
+          },
+          "description": {
+            "type": "string",
+            "description": "A brief description of what the session is about."
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "ID of the instructor hosting the session."
+          },
+          "scheduledTime": {
+            "type": "string",
+            "description": "The time the session is scheduled to start.",
+            "format": "date-time"
+          },
+           "isFree": {
+            "type": "boolean",
+            "description": "Indicates whether the live session is free to join."
+          },
+          "meetingUrl": {
+            "type": "string",
+            "description": "The URL to join the live session.",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "instructorId",
+          "scheduledTime",
+          "isFree",
+          "meetingUrl"
+        ]
+      }
   },
   "auth": {
     "providers": [
@@ -381,6 +428,22 @@
           ]
         }
       },
+       {
+        "path": "/liveSessions/{sessionId}",
+        "definition": {
+          "entityName": "LiveSession",
+          "schema": {
+            "$ref": "#/backend/entities/LiveSession"
+          },
+          "description": "Stores information about active and upcoming live sessions.",
+          "params": [
+            {
+              "name": "sessionId",
+              "description": "The unique identifier of the live session."
+            }
+          ]
+        }
+      },
       {
         "path": "/courses/{courseId}/lectures/{lectureId}",
         "definition": {
@@ -442,6 +505,6 @@
         }
       }
     ],
-    "reasoning": "This Firestore structure is designed to support Tech Learnings's core features, focusing on secure access control, scalability, and maintainability. It prioritizes authorization independence to avoid complex and fragile security rules that rely on hierarchical `get()` calls. The structure adheres to the principle of structural segregation, ensuring that collections contain documents with similar security postures. Access control is modeled consistently using path-based ownership and membership maps where appropriate.\n\n**Key Design Choices and Justifications:**\n\n*   **/users/{userId}/**:  User data is stored in a path-based ownership model. This allows for easy management of user-specific data and simplifies security rules.\n*   **/instructors/{instructorId}/**: Instructor data is stored separately. This enables independent management and scaling of instructor profiles and related data.\n*   **/categories/{categoryId}/**: Category data is stored globally for course categorization.\n*   **/courses/{courseId}/**: Course data is stored globally.  The `instructorId` field links courses to instructors.  Free courses are determined by the `isFree` boolean and `price` field.\n*   **/classes/{classId}/**: Recorded classes are stored globally. The `instructorId` field links the class to the instructor who created it.\n*   **/courses/{courseId}/lectures/{lectureId}/**: Lectures are stored as subcollections of courses, establishing a clear hierarchy. This simplifies queries for lectures within a specific course. Because lectures require the same authorization scope as Courses (e.g., instructors can create/modify, users with subscriptions can view), it inherits the authorization scope of the Course entity.\n*   **/users/{userId}/subscriptions/{subscriptionId}/**: Subscription data is stored under each user, enabling easy retrieval of a user's subscription status. The `status` field explicitly models the subscription state.\n*   **/users/{userId}/progress/{progressId}/**:  Course progress is tracked per user, using a document ID per course. The document contains the `completedLectures` array. This keeps track of a user's progress in a course.\n\n**Authorization Independence and QAPs:**\n\nAuthorization independence is achieved by avoiding `get()` calls in security rules. For example, a lecture's access control doesn't need to `get()` the parent course's information because access is implicitly granted if the user can access the course.\n\nThe design supports required QAPs (Rules are not Filters) by:\n\n*   **Structural Segregation:** Placing different data types into different collections, ensuring security rules can be written without needing to filter data.\n*   **Path-Based Ownership:**  Using path-based ownership (e.g., `/users/{userId}/subscriptions/{subscriptionId}`) allows security rules to easily verify ownership based on the request path.\n\nThis structure ensures a secure, scalable, and easily debuggable Firestore database for Tech Learnings."
+    "reasoning": "This Firestore structure is designed to support Tech Learnings's core features, focusing on secure access control, scalability, and maintainability. It prioritizes authorization independence to avoid complex and fragile security rules that rely on hierarchical `get()` calls. The structure adheres to the principle of structural segregation, ensuring that collections contain documents with similar security postures. Access control is modeled consistently using path-based ownership and membership maps where appropriate.\n\n**Key Design Choices and Justifications:**\n\n*   **/users/{userId}/**:  User data is stored in a path-based ownership model. This allows for easy management of user-specific data and simplifies security rules.\n*   **/instructors/{instructorId}/**: Instructor data is stored separately. This enables independent management and scaling of instructor profiles and related data.\n*   **/categories/{categoryId}/**: Category data is stored globally for course categorization.\n*   **/courses/{courseId}/**: Course data is stored globally.  The `instructorId` field links courses to instructors.  Free courses are determined by the `isFree` boolean and `price` field.\n*   **/classes/{classId}/**: Recorded classes are stored globally. The `instructorId` field links the class to the instructor who created it.\n*   **/liveSessions/{sessionId}/**: Stores active live sessions. The creation of these documents can trigger notifications.\n*   **/courses/{courseId}/lectures/{lectureId}/**: Lectures are stored as subcollections of courses, establishing a clear hierarchy. This simplifies queries for lectures within a specific course. Because lectures require the same authorization scope as Courses (e.g., instructors can create/modify, users with subscriptions can view), it inherits the authorization scope of the Course entity.\n*   **/users/{userId}/subscriptions/{subscriptionId}/**: Subscription data is stored under each user, enabling easy retrieval of a user's subscription status. The `status` field explicitly models the subscription state.\n*   **/users/{userId}/progress/{progressId}/**:  Course progress is tracked per user, using a document ID per course. The document contains the `completedLectures` array. This keeps track of a user's progress in a course.\n\n**Authorization Independence and QAPs:**\n\nAuthorization independence is achieved by avoiding `get()` calls in security rules. For example, a lecture's access control doesn't need to `get()` the parent course's information because access is implicitly granted if the user can access the course.\n\nThe design supports required QAPs (Rules are not Filters) by:\n\n*   **Structural Segregation:** Placing different data types into different collections, ensuring security rules can be written without needing to filter data.\n*   **Path-Based Ownership:**  Using path-based ownership (e.g., `/users/{userId}/subscriptions/{subscriptionId}`) allows security rules to easily verify ownership based on the request path.\n\nThis structure ensures a secure, scalable, and easily debuggable Firestore database for Tech Learnings."
   }
 }
