@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
 import { Clipboard } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 interface Subscription {
   id: string;
