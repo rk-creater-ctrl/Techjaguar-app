@@ -8,7 +8,13 @@ import { Play } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const languageTemplates = {
-  javascript: `console.log("Hello, JavaScript World!");`,
+  javascript: `console.log("Hello, JavaScript World!");
+
+function add(a, b) {
+  return a + b;
+}
+
+console.log("2 + 3 =", add(2, 3));`,
   python: `print("Hello, Python World!")`,
   java: `public class Main {
     public static void main(String[] args) {
@@ -42,11 +48,42 @@ export function CompilerPlayground() {
   };
 
   const handleRun = () => {
-    // In a real app, you would send the code to a backend execution service.
-    setOutput(`Running code... (feature not implemented)
+    setOutput('Running code...');
+
+    if (activeTab === 'javascript') {
+      let capturedOutput = '';
+      const originalLog = console.log;
+      
+      // Temporarily override console.log to capture output
+      console.log = (...args) => {
+        capturedOutput += args.map(arg => {
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return 'Unserializable Object';
+            }
+          }
+          return String(arg);
+        }).join(' ') + '\\n';
+      };
+
+      try {
+        new Function(code.javascript)();
+        setOutput(capturedOutput || 'Code executed successfully, but produced no output.');
+      } catch (error: any) {
+        setOutput(`Error: ${error.message}`);
+      } finally {
+        // Restore original console.log
+        console.log = originalLog;
+      }
+    } else {
+      // For other languages, keep the simulation
+      setOutput(`Backend execution for ${activeTab} is not implemented yet.
 
 Your code:
 ${code[activeTab]}`);
+    }
   };
 
   return (
@@ -76,7 +113,7 @@ ${code[activeTab]}`);
               <Textarea
                 value={code[lang as Language]}
                 onChange={(e) => handleCodeChange(e.target.value)}
-                className="h-[40vh] font-code text-sm bg-muted/50"
+                className="h-[40vh] font-mono text-sm bg-muted/50"
                 placeholder={`Write your ${lang} code here...`}
               />
             </TabsContent>
@@ -88,7 +125,7 @@ ${code[activeTab]}`);
               <CardTitle className="text-lg font-headline">Output</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm bg-muted/50 p-4 rounded-md h-[calc(40vh-72px)] overflow-auto">
+              <pre className="text-sm bg-muted/50 p-4 rounded-md h-[calc(40vh-72px)] overflow-auto whitespace-pre-wrap">
                 {output}
               </pre>
             </CardContent>
