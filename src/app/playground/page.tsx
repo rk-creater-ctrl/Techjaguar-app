@@ -17,17 +17,17 @@ export default function PlaygroundPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
             <Code className="h-8 w-8 text-accent" />
-            Playground
+            Code Editor
           </h1>
           <p className="text-muted-foreground">
-            Practice your coding skills in a variety of languages.
+            Write and test code snippets in various languages.
           </p>
         </div>
       </div>
 
       <Card className="min-h-[60vh]">
         <CardHeader>
-          <CardTitle className="font-headline">Code Editor</CardTitle>
+          <CardTitle className="font-headline">Live Compiler</CardTitle>
           <CardDescription>
             Select a language, write your code, and see the output. Code execution is not enabled yet.
           </CardDescription>

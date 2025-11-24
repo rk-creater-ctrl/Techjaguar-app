@@ -77,7 +77,7 @@ export function AppHeader() {
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
               <Code className="h-5 w-5" />
-              Playground
+              Code Editor
             </Link>
             <Link
               href="/recommendations"

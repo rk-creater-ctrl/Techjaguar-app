@@ -47,7 +47,7 @@ export function AppSidebar() {
             </NavLink>
             <NavLink href="/playground">
               <Code className="h-4 w-4" />
-              Playground
+              Code Editor
             </NavLink>
             <NavLink href="/recommendations">
               <Sparkles className="h-4 w-4" />
