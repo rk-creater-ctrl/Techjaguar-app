@@ -64,7 +64,7 @@ ${code[activeTab]}`);
           <TabsTrigger value="cpp">C++</TabsTrigger>
           <TabsTrigger value="mysql">MySQL</TabsTrigger>
         </TabsList>
-        <Button onClick={handleRun} disabled>
+        <Button onClick={handleRun}>
           <Play className="mr-2 h-4 w-4" />
           Run Code
         </Button>
