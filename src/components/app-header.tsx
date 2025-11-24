@@ -8,6 +8,7 @@ import {
   PanelLeft,
   Video,
   Mic,
+  Code,
 } from 'lucide-react';
 import {
   Sheet,
@@ -70,6 +71,13 @@ export function AppHeader() {
             >
               <Radio className="h-5 w-5" />
               Live Sessions
+            </Link>
+            <Link
+              href="/playground"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Code className="h-5 w-5" />
+              Playground
             </Link>
             <Link
               href="/recommendations"
