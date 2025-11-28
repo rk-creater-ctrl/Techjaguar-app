@@ -67,6 +67,21 @@ export async function createClass(firestore: Firestore, classData: Omit<Recorded
     }
 }
 
+export async function updateClass(firestore: Firestore, classId: string, classData: Partial<RecordedClass>) {
+    try {
+        const classRef = doc(firestore, 'classes', classId);
+        await updateDoc(classRef, classData);
+    } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: `classes/${classId}`,
+            operation: 'update',
+            requestResourceData: classData,
+        });
+        throw permissionError;
+    }
+}
+
+
 export async function startLiveSession(firestore: Firestore, sessionData: Omit<LiveSession, 'id' | 'scheduledTime'>) {
     try {
         const collectionRef = collection(firestore, 'liveSessions');

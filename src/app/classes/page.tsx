@@ -4,11 +4,12 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Video } from 'lucide-react';
+import { PlusCircle, Video, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useCollection, WithId } from '@/firebase/firestore/use-collection';
@@ -20,7 +21,7 @@ import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 
-function ClassCard({ classItem }: { classItem: WithId<RecordedClass> }) {
+function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClass>, isInstructor: boolean }) {
   const videoUrl = classItem.videoUrl;
 
   const CardWrapper = ({ children }: { children: React.ReactNode }) =>
@@ -36,18 +37,18 @@ function ClassCard({ classItem }: { classItem: WithId<RecordedClass> }) {
   return (
      <CardWrapper>
         <Card className="overflow-hidden h-full flex flex-col">
-          {!classItem.isFree && (
-            <div className="absolute top-2 right-2 z-10">
-              <Badge variant="default" className="bg-primary hover:bg-primary">
-                <Lock className="w-3 h-3 mr-1" />
-                PRO
-              </Badge>
-            </div>
-          )}
           <CardHeader>
-            <CardTitle className="font-headline group-hover:underline">
-              {classItem.title}
-            </CardTitle>
+             <div className="flex justify-between items-start">
+                <CardTitle className="font-headline group-hover:underline pr-4">
+                  {classItem.title}
+                </CardTitle>
+                {!classItem.isFree && (
+                    <Badge variant="default" className="bg-primary hover:bg-primary whitespace-nowrap">
+                        <Lock className="w-3 h-3 mr-1" />
+                        PRO
+                    </Badge>
+                )}
+             </div>
             <CardDescription>
               {classItem.description}
             </CardDescription>
@@ -68,6 +69,16 @@ function ClassCard({ classItem }: { classItem: WithId<RecordedClass> }) {
               )}
             </div>
           </CardContent>
+          {isInstructor && (
+            <CardFooter>
+                <Link href={`/classes/${classItem.id}/edit`} className="w-full">
+                    <Button variant="outline" size="sm" className="w-full">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Class
+                    </Button>
+                </Link>
+            </CardFooter>
+          )}
         </Card>
      </CardWrapper>
   );
@@ -93,7 +104,7 @@ export default function ClassesPage() {
     <div className="grid gap-6 mt-4 md:grid-cols-2 lg:grid-cols-3">
         {classes.length > 0 ? (
             classes.map((rec: WithId<RecordedClass>) => (
-            <ClassCard key={rec.id} classItem={rec} />
+            <ClassCard key={rec.id} classItem={rec} isInstructor={isInstructor} />
             ))
         ) : (
             <div className="md:col-span-2 lg:col-span-3">

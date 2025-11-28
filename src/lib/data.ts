@@ -2,8 +2,9 @@ import { PlaceHolderImages } from './placeholder-images';
 import type {
   Course as CourseSchema,
   Lecture as LectureSchema,
+  RecordedClass as RecordedClassSchema
 } from './schema';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, getDoc, query, where, doc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { getSubscriptionByUserId as getMockSubscription } from './mock-data';
 
@@ -106,4 +107,26 @@ export const getSubscriptionByUserId = async (
   // In a real app, you would fetch this from Firestore.
   // For now, we'll simulate it with a mock user.
   return getMockSubscription(userId);
+};
+
+
+export const getClassById = async (
+  db: Firestore,
+  classId: string,
+): Promise<(RecordedClassSchema & { id: string }) | undefined> => {
+   if (!db) {
+    console.error("Firestore instance is not available in getClassById");
+    return undefined;
+  }
+  const classRef = doc(db, 'classes', classId);
+  const docSnap = await getDoc(classRef);
+
+  if (docSnap.exists()) {
+    return {
+        ...(docSnap.data() as RecordedClassSchema),
+        id: docSnap.id,
+    };
+  } else {
+    return undefined;
+  }
 };
