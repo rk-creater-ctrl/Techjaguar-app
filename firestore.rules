@@ -123,6 +123,7 @@ service cloud.firestore {
      * @description
      *  - A special document to hold the UID of the application instructor.
      *  - Only the currently designated instructor can write to it, but it should rarely change.
+     *  - Public read is required for the `isAppInstructor` function to work correctly.
      * @path /app-config/instructor
      */
     match /app-config/instructor {
