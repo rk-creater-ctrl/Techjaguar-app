@@ -37,7 +37,8 @@ export async function setInstructorAction(
   try {
      // Store the instructor UID in a document that security rules can access.
     const configRef = doc(firestore, 'app-config', 'instructor');
-    await setDoc(configRef, { uid: uid });
+    // Ensure the data being set is just { uid: "the-user-id" }
+    await setDoc(configRef, { uid });
     
     // Also write to .env for client-side checks
     const envPath = path.resolve(process.cwd(), '.env');
