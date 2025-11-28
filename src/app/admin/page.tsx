@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Loader2, Shield, Users } from 'lucide-react';
 import { collection } from 'firebase/firestore';
 import { useCollection, WithId } from '@/firebase/firestore/use-collection';
@@ -55,26 +55,38 @@ export default function AdminPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
-
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
   
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !isInstructor) return null;
+    if (!firestore) return null;
+    // This query will now only succeed if the user is the instructor,
+    // as defined by the updated Firestore security rules.
     return collection(firestore, 'users');
-  }, [firestore, isInstructor]);
+  }, [firestore]);
   
-  const { data: users, isLoading } = useCollection<UserSchema>(usersQuery);
+  const { data: users, isLoading, error } = useCollection<UserSchema>(usersQuery);
 
   useEffect(() => {
-    if (!isUserLoading && !isInstructor) {
+    if (!isUserLoading && error) {
+      // If there's a permission error, the user is not the admin. Redirect them.
+      console.error("Redirecting due to error:", error);
       router.replace('/');
     }
-  }, [isUserLoading, isInstructor, router]);
+  }, [isUserLoading, error, router]);
 
-  if (isUserLoading || !isInstructor) {
+  if (isUserLoading || (isLoading && !users)) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
+  // If the query fails and redirects, this part won't be rendered.
+  // We can also add an explicit check for the error state to show a message.
+  if (error) {
+     return (
+      <div className="flex h-full w-full items-center justify-center text-destructive">
+        <p>You do not have permission to view this page.</p>
       </div>
     );
   }
