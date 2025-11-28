@@ -66,7 +66,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
     } : {
       title: '',
       description: '',
-      price: 0,
+      price: 29.99,
       isFree: false,
     },
   });
@@ -83,10 +83,15 @@ export function CourseForm({ course }: CreateCourseFormProps) {
         return;
     }
     
+    const finalData = {
+        ...data,
+        price: data.isFree ? 0 : data.price,
+    };
+
     try {
       if (isEditing && course.id) {
         await updateCourse(firestore, course.id, {
-          ...data,
+          ...finalData,
           author: user.displayName || 'Unnamed Instructor',
         });
         toast({
@@ -95,7 +100,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
         });
       } else {
         await createCourse(firestore, {
-          ...data,
+          ...finalData,
           id: uuidv4(),
           instructorId: user.uid,
           categoryId: 'general', // Placeholder
@@ -201,12 +206,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={(checked) => {
-                      field.onChange(checked);
-                      if (checked) {
-                        form.setValue('price', 0);
-                      }
-                    }}
+                    onCheckedChange={field.onChange}
                   />
                 </FormControl>
               </FormItem>
@@ -220,7 +220,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
                 <FormItem>
                   <FormLabel>Price</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 49.99" {...field} />
+                    <Input type="number" step="0.01" placeholder="e.g., 29.99" {...field} />
                   </FormControl>
                   <FormDescription>
                     Set the price for your course in USD.

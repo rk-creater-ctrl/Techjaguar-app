@@ -1,6 +1,6 @@
 'use client';
 import {
-  Auth, // Import Auth type for type hinting
+  Auth,
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -10,7 +10,6 @@ import { toast } from '@/hooks/use-toast';
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
-  // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
   signInAnonymously(authInstance).catch((error) => {
     console.error('Anonymous sign in error:', error);
     toast({
@@ -20,7 +19,6 @@ export function initiateAnonymousSignIn(authInstance: Auth): void {
         error.message || 'Could not sign in anonymously. Please try again.',
     });
   });
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-up (non-blocking). */
@@ -28,18 +26,16 @@ export function initiateEmailSignUp(
   authInstance: Auth,
   email: string,
   password: string,
-  displayName: string
+  displayName: string,
+  onFinally?: () => void
 ): void {
   createUserWithEmailAndPassword(authInstance, email, password)
     .then((userCredential) => {
-      // Once the user is created, update their profile with the display name
       if (userCredential.user) {
-        // Do NOT await updateProfile, let it run in the background
         updateProfile(userCredential.user, { displayName });
       }
     })
     .catch((error) => {
-      // The onAuthStateChanged listener will handle UI updates on failure
       console.error('Sign up error:', error);
       toast({
         variant: 'destructive',
@@ -47,6 +43,9 @@ export function initiateEmailSignUp(
         description:
           error.message || 'Could not create your account. Please try again.',
       });
+    })
+    .finally(() => {
+        onFinally?.();
     });
 }
 
@@ -54,19 +53,22 @@ export function initiateEmailSignUp(
 export function initiateEmailSignIn(
   authInstance: Auth,
   email: string,
-  password: string
+  password: string,
+  onFinally?: () => void
 ): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password).catch((error) => {
-    console.error('Sign in error:', error);
-    toast({
-      variant: 'destructive',
-      title: 'Sign In Failed',
-      description:
-        error.message || 'Invalid email or password. Please try again.',
+  signInWithEmailAndPassword(authInstance, email, password)
+    .catch((error) => {
+      console.error('Sign in error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Sign In Failed',
+        description:
+          error.message || 'Invalid email or password. Please try again.',
+      });
+    })
+    .finally(() => {
+        onFinally?.();
     });
-  });
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate user profile update (non-blocking). */

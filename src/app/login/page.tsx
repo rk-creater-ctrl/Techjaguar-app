@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -32,7 +32,6 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,11 +42,11 @@ export default function LoginPage() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    initiateEmailSignIn(auth, values.email, values.password);
-    toast({
+    const { dismiss } = toast({
       title: 'Signing In...',
       description: 'Please wait while we sign you in.',
     });
+    initiateEmailSignIn(auth, values.email, values.password, dismiss);
   }
 
   return (

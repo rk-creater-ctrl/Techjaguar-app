@@ -46,8 +46,6 @@ export default function StudioPage() {
 
   useEffect(() => {
     if (!isInstructor) return;
-
-    let stream: MediaStream | null = null;
     
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -61,7 +59,7 @@ export default function StudioPage() {
         return;
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -81,9 +79,6 @@ export default function StudioPage() {
     getCameraPermission();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -251,7 +246,7 @@ export default function StudioPage() {
                     )}
                 </div>
                  <div className="mt-6 flex flex-col space-y-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                         <Input 
                             placeholder="Enter session name..." 
                             value={sessionName}
@@ -259,9 +254,9 @@ export default function StudioPage() {
                             disabled={isStreaming}
                             className="flex-grow"
                         />
-                         <div className="flex items-center space-x-2 rounded-lg border p-4">
+                         <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                            <Label htmlFor="free-session" className="flex-grow">Make Session Free</Label>
                             <Switch id="free-session" checked={isFree} onCheckedChange={setIsFree} disabled={isStreaming} />
-                            <Label htmlFor="free-session" className="flex-grow">Free Session</Label>
                         </div>
                     </div>
                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -279,7 +274,7 @@ export default function StudioPage() {
                     
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Input 
-                                placeholder="Recording name (optional)..." 
+                                placeholder="Recording name..." 
                                 value={recordingName}
                                 onChange={(e) => setRecordingName(e.target.value)}
                                 disabled={!isStreaming || isRecording}
