@@ -1,3 +1,4 @@
+'use client';
 // Defines the database schema for the application
 // See: https://firebase.google.com/docs/firestore/manage-data/structure-data
 

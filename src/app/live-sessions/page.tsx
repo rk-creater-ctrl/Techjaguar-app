@@ -29,9 +29,20 @@ function LiveSessionCard({ session }: { session: WithId<LiveSession> }) {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">
-            <Users className="mr-2 h-4 w-4" />
-            Upgrade to Join
+        <Button asChild className="w-full">
+           <Link href={session.isFree ? session.meetingUrl : '/billing'} target={session.isFree ? '_blank' : '_self'}>
+             {session.isFree ? (
+                <>
+                  <Radio className="mr-2 h-4 w-4" />
+                  Join Now
+                </>
+              ) : (
+                <>
+                  <Users className="mr-2 h-4 w-4" />
+                  Upgrade to Join
+                </>
+              )}
+           </Link>
         </Button>
       </CardFooter>
     </Card>

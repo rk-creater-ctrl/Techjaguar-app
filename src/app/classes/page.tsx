@@ -25,13 +25,15 @@ function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClas
   const videoUrl = classItem.videoUrl;
 
   const CardWrapper = ({ children }: { children: React.ReactNode }) =>
-  classItem.isFree ? (
-    <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:shadow-lg transition-shadow duration-300 h-full group">
-      {children}
-    </a>
-  ) : (
-    <div className="relative h-full">{children}</div>
-  );
+    classItem.isFree ? (
+      <div className="block hover:shadow-lg transition-shadow duration-300 h-full group">
+        {children}
+      </div>
+    ) : (
+      <Link href="/billing" className="relative h-full block hover:shadow-lg transition-shadow duration-300 group">
+        {children}
+      </Link>
+    );
 
 
   return (
@@ -57,7 +59,7 @@ function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClas
             <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
               {videoUrl ? (
                  <iframe
-                    className="w-full h-full rounded-md"
+                    className="w-full h-full rounded-md pointer-events-none"
                     src={videoUrl.replace("watch?v=", "embed/")} 
                     title={classItem.title}
                     frameBorder="0"
