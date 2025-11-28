@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Firestore Security Rules for Tech Learnings.
  *
@@ -126,8 +127,8 @@ service cloud.firestore {
      */
     match /app-config/instructor {
         allow get: if true;
-        allow write: if isAppInstructor(); // Allow current instructor to change, though unlikely.
-        allow create: if true; // Allows first-time setup.
+        allow write: if isAppInstructor() || request.auth.uid == request.resource.data.uid;
+        allow create: if true;
     }
 
 
