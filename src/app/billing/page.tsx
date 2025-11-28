@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CreditCard, Star } from 'lucide-react';
 import type { Subscription } from '@/lib/schema';
+import Link from 'next/link';
 
 
 function SubscriptionDetails() {
@@ -61,7 +62,9 @@ function SubscriptionDetails() {
               <Star className="h-12 w-12 text-yellow-500 mb-4" />
               <p className="text-lg font-semibold mb-2">You are on the Free Plan</p>
               <p className="text-muted-foreground mb-6">Upgrade to Pro to access all premium content and live sessions.</p>
-              <Button size="lg">Upgrade to Pro</Button>
+              <Link href="/checkout">
+                <Button size="lg">Upgrade to Pro</Button>
+              </Link>
           </div>
         </CardContent>
       </Card>
