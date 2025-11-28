@@ -9,6 +9,7 @@ import {
   Video,
   Mic,
   Code,
+  Shield,
 } from 'lucide-react';
 import {
   Sheet,
@@ -87,13 +88,22 @@ export function AppHeader() {
               For You
             </Link>
             {isInstructor && (
-              <Link
-                href="/studio"
-                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <Mic className="h-5 w-5" />
-                Studio
-              </Link>
+              <>
+                <Link
+                  href="/studio"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Mic className="h-5 w-5" />
+                  Studio
+                </Link>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Shield className="h-5 w-5" />
+                  Admin
+                </Link>
+              </>
             )}
           </nav>
         </SheetContent>

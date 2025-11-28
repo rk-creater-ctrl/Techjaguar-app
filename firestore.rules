@@ -9,6 +9,7 @@
  *
  * Data Structure:
  * - /users/{userId}: User profiles, accessible only by the user themselves.
+ *   The designated instructor can list all users.
  * - /instructors/{instructorId}: Instructor profiles, publicly readable but
  *   writable only by the instructor.
  * - /categories/{categoryId}: Course categories, publicly readable. Write access
@@ -28,9 +29,10 @@
  *
  * Key Security Decisions:
  * - Users can only access their own data under /users/{userId}.
+ * - The designated instructor can list all users for administrative purposes.
  * - Public read access is granted for course-related information.
  * - Instructors can create, update, and delete courses they own.
- * - Listing of users and instructors is disallowed for privacy reasons.
+ * - Listing of non-admin users is disallowed for privacy reasons.
  * - Default deny for any ambiguous or unspecified write operations.
  *
  * Denormalization for Authorization:
@@ -51,6 +53,16 @@ service cloud.firestore {
      */
     function isSignedIn() {
       return request.auth != null;
+    }
+    
+    /**
+     * @description Checks if the authenticated user is the designated instructor for the app.
+     * The instructor UID is stored in a document for the rules to access.
+     * @returns {boolean} True if the user is the instructor, false otherwise.
+     */
+    function isAppInstructor() {
+        return isSignedIn() && exists(/databases/$(database)/documents/app-config/instructor) &&
+               get(/databases/$(database)/documents/app-config/instructor).data.uid == request.auth.uid;
     }
 
     /**
@@ -91,36 +103,38 @@ service cloud.firestore {
     /**
      * @description
      *  - Allows a user to only access their own profile.
+     *  - Allows the designated application instructor to list all users.
      * @path /users/{userId}
      * @allow (get) User with ID 'user123' can get their own profile. (auth.uid: 'user123')
-     * @allow (create) User with ID 'user123' can create their own profile if the ID matches. (auth.uid: 'user123')
-     * @allow (update) User with ID 'user123' can update their own profile. (auth.uid: 'user123')
-     * @allow (delete) User with ID 'user123' can delete their own profile. (auth.uid: 'user123')
-     * @deny (get) User with ID 'user456' cannot get the profile of user 'user123'. (auth.uid: 'user456')
-     * @deny (create) User with ID 'user456' cannot create a profile for user 'user123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update the profile of user 'user123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete the profile of user 'user123'. (auth.uid: 'user456')
-     * @principle Enforces document ownership for all operations.
+     * @allow (list) The application instructor can list all users.
+     * @deny (list) A regular user cannot list all users.
+     * @principle Enforces document ownership for most operations, with an exception for admin listing.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false; // Listing users is not permitted.
+      allow list: if isAppInstructor();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
+    
+    /**
+     * @description
+     *  - A special document to hold the UID of the application instructor.
+     *  - Only the currently designated instructor can write to it, but it should rarely change.
+     * @path /app-config/instructor
+     */
+    match /app-config/instructor {
+        allow get: if true;
+        allow write: if isAppInstructor(); // Allow current instructor to change, though unlikely.
+        allow create: if true; // Allows first-time setup.
+    }
+
 
     /**
      * @description
      *  - Allows anyone to read instructor profiles, but only the instructor can modify their own profile.
      * @path /instructors/{instructorId}
-     * @allow (get) Any user can get an instructor's profile.
-     * @allow (create) Instructor with ID 'instructor123' can create their own profile if the ID matches. (auth.uid: 'instructor123')
-     * @allow (update) Instructor with ID 'instructor123' can update their own profile. (auth.uid: 'instructor123')
-     * @allow (delete) Instructor with ID 'instructor123' can delete their own profile. (auth.uid: 'instructor123')
-     * @deny (create) User with ID 'user456' cannot create a profile for instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update the profile of instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete the profile of instructor 'instructor123'. (auth.uid: 'user456')
      * @principle Allows public read access with owner-only writes.
      */
     match /instructors/{instructorId} {
@@ -135,10 +149,6 @@ service cloud.firestore {
      * @description
      *  - Allows anyone to read course categories. Write access is implicitly denied.
      * @path /categories/{categoryId}
-     * @allow (get) Any user can get a category.
-     * @deny (create) No one can create a category (explicitly denied).
-     * @deny (update) No one can update a category (explicitly denied).
-     * @deny (delete) No one can delete a category (explicitly denied).
      * @principle Allows public read-only access.
      */
     match /categories/{categoryId} {
@@ -153,14 +163,6 @@ service cloud.firestore {
      * @description
      *  - Allows anyone to read course information, but only the instructor who owns the course can modify it.
      * @path /courses/{courseId}
-     * @allow (get) Any user can get course information.
-     * @allow (list) Any user can list courses.
-     * @allow (create) Instructor with ID 'instructor123' can create a course where instructorId matches. (auth.uid: 'instructor123')
-     * @allow (update) Instructor with ID 'instructor123' can update a course where instructorId matches. (auth.uid: 'instructor123')
-     * @allow (delete) Instructor with ID 'instructor123' can delete a course where instructorId matches. (auth.uid: 'instructor123')
-     * @deny (create) User with ID 'user456' cannot create a course for instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update a course owned by instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete a course owned by instructor 'instructor123'. (auth.uid: 'user456')
      * @principle Allows public read access with owner-only writes.
      */
     match /courses/{courseId} {
@@ -175,11 +177,6 @@ service cloud.firestore {
      * @description
      *  - Allows anyone to read recorded classes, but only the instructor can create, update, or delete them.
      * @path /classes/{classId}
-     * @allow (get) Any user can get recorded class information.
-     * @allow (list) Any user can list recorded classes.
-     * @allow (create) Instructor can create a recorded class.
-     * @allow (update) Instructor who owns the class can update it.
-     * @allow (delete) Instructor who owns the class can delete it.
      * @principle Public read access with owner-only writes.
      */
     match /classes/{classId} {
@@ -194,11 +191,6 @@ service cloud.firestore {
      * @description
      *  - Allows anyone to read live session details. Only instructors can create them.
      * @path /liveSessions/{sessionId}
-     * @allow (get) Any user can view live session details.
-     * @allow (list) Any user can list live sessions.
-     * @allow (create) An instructor can start a new live session.
-     * @deny (update) Live sessions cannot be updated.
-     * @deny (delete) Live sessions cannot be deleted through the client.
      * @principle Public read access with owner-only creation.
      */
     match /liveSessions/{sessionId} {
@@ -214,14 +206,6 @@ service cloud.firestore {
      *  - Allows anyone to read lecture information, but only the instructor who owns the course can modify it.
      *  - Inherits access control from the parent Course entity.
      * @path /courses/{courseId}/lectures/{lectureId}
-     * @allow (get) Any user can get lecture information.
-     * @allow (list) Any user can list lectures.
-     * @allow (create) Instructor with ID 'instructor123' can create a lecture for a course they own. (auth.uid: 'instructor123')
-     * @allow (update) Instructor with ID 'instructor123' can update a lecture for a course they own. (auth.uid: 'instructor123')
-     * @allow (delete) Instructor with ID 'instructor123' can delete a lecture for a course they own. (auth.uid: 'instructor123')
-     * @deny (create) User with ID 'user456' cannot create a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete a lecture for a course owned by instructor 'instructor123'. (auth.uid: 'user456')
      * @principle Inherits access control from the parent Course entity.
      */
     match /courses/{courseId}/lectures/{lectureId} {
@@ -236,14 +220,6 @@ service cloud.firestore {
      * @description
      *  - Allows a user to only access their own subscription information.
      * @path /users/{userId}/subscriptions/{subscriptionId}
-     * @allow (get) User with ID 'user123' can get their own subscription. (auth.uid: 'user123')
-     * @allow (create) User with ID 'user123' can create their own subscription if the ID matches. (auth.uid: 'user123')
-     * @allow (update) User with ID 'user123' can update their own subscription. (auth.uid: 'user123')
-     * @allow (delete) User with ID 'user123' can delete their own subscription. (auth.uid: 'user123')
-     * @deny (get) User with ID 'user456' cannot get the subscription of user 'user123'. (auth.uid: 'user456')
-     * @deny (create) User with ID 'user456' cannot create a subscription for user 'user123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update the subscription of user 'user123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete the subscription of user 'user123'. (auth.uid: 'user456')
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/subscriptions/{subscriptionId} {
@@ -258,14 +234,6 @@ service cloud.firestore {
      * @description
      *  - Allows a user to only access their own course progress information.
      * @path /users/{userId}/progress/{progressId}
-     * @allow (get) User with ID 'user123' can get their own course progress. (auth.uid: 'user123')
-     * @allow (create) User with ID 'user123' can create their own course progress if the ID matches. (auth.uid: 'user123')
-     * @allow (update) User with ID 'user123' can update their own course progress. (auth.uid: 'user123')
-     * @allow (delete) User with ID 'user123' can delete their own course progress. (auth.uid: 'user123')
-     * @deny (get) User with ID 'user456' cannot get the course progress of user 'user123'. (auth.uid: 'user456')
-     * @deny (create) User with ID 'user456' cannot create course progress for user 'user123'. (auth.uid: 'user456')
-     * @deny (update) User with ID 'user456' cannot update the course progress of user 'user123'. (auth.uid: 'user456')
-     * @deny (delete) User with ID 'user456' cannot delete the course progress of user 'user123'. (auth.uid: 'user456')
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/progress/{progressId} {
