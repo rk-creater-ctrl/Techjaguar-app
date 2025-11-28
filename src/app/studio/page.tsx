@@ -44,6 +44,8 @@ export default function StudioPage() {
   useEffect(() => {
     if (!isInstructor) return;
 
+    let stream: MediaStream | null = null;
+    
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('Media Devices API not supported.');
@@ -56,7 +58,7 @@ export default function StudioPage() {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -76,8 +78,12 @@ export default function StudioPage() {
     getCameraPermission();
 
     return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
     };
   }, [toast, isInstructor]);
