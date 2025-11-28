@@ -4,6 +4,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 
 const schema = z.object({
   uid: z.string().min(1, 'UID is required.'),
@@ -33,18 +34,20 @@ export async function setInstructorAction(
     envContent = await fs.readFile(envPath, 'utf8');
   } catch (error: any) {
     if (error.code !== 'ENOENT') {
-      throw error;
+      // If the file doesn't exist, we'll create it. 
+      // If another error occurs, we should throw it.
+      return { message: `Error reading configuration file: ${error.message}` };
     }
   }
 
-  // Check if the instructor UID is already set
-  if (envContent.includes('NEXT_PUBLIC_INSTRUCTOR_UID=')) {
-     const existingUid = envContent.split('\n').find(line => line.startsWith('NEXT_PUBLIC_INSTRUCTOR_UID='))?.split('=')[1];
+  // Check if the instructor UID is already set to a non-placeholder value.
+  const existingUidLine = envContent.split('\n').find(line => line.startsWith('NEXT_PUBLIC_INSTRUCTOR_UID='));
+  if (existingUidLine) {
+     const existingUid = existingUidLine.split('=')[1];
      if(existingUid && existingUid.trim() !== '' && existingUid.trim() !== 'YOUR_INSTRUCTOR_FIREBASE_UID') {
         return { message: 'Error: An instructor has already been set for this application.' };
      }
   }
-
 
   const { uid } = validatedFields.data;
   const envVar = `NEXT_PUBLIC_INSTRUCTOR_UID=${uid}`;
@@ -63,14 +66,22 @@ export async function setInstructorAction(
     if (!found) {
       newLines.push(envVar);
     }
+    
+    // Ensure no blank lines at the end of the file
+    const finalContent = newLines.filter(line => line.trim() !== '').join('\n');
 
-    await fs.writeFile(envPath, newLines.join('\n'));
+    await fs.writeFile(envPath, finalContent);
+    
+    // Revalidate all paths to ensure the new env var is picked up by server components
+    revalidatePath('/', 'layout');
 
     return { message: 'success' };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to update .env file:', error);
     return {
-      message: 'Error: Could not update the configuration file on the server.',
+      message: `Error: Could not update the configuration file on the server. ${error.message}`,
     };
   }
 }
+
+    
