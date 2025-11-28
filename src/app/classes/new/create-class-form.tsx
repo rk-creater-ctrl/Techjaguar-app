@@ -30,8 +30,20 @@ const classSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   isFree: z.boolean().default(false),
-  videoUrl: z.string().url('Please enter a valid video URL.'),
+  videoUrl: z.string().optional(),
+  uploadVideo: z.boolean().default(false),
+}).refine(data => {
+    if (data.uploadVideo) {
+        // If uploading, URL is not required. Logic for handling file would be here.
+        return true;
+    }
+    // If not uploading, URL is required and must be a valid URL.
+    return !!data.videoUrl && z.string().url().safeParse(data.videoUrl).success;
+}, {
+    message: 'Please enter a valid video URL.',
+    path: ['videoUrl'],
 });
+
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
@@ -45,6 +57,8 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const isEditing = !!classItem;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
@@ -53,13 +67,30 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
         description: classItem.description,
         isFree: classItem.isFree,
         videoUrl: classItem.videoUrl,
+        uploadVideo: !classItem.videoUrl, // A simple heuristic
     } : {
       title: '',
       description: '',
       isFree: false,
       videoUrl: '',
+      uploadVideo: false,
     },
   });
+  
+  const uploadVideo = form.watch('uploadVideo');
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      // In a real app, you would start the upload process here.
+      toast({
+          title: 'File Selected',
+          description: `${file.name}`,
+      });
+    }
+  };
+
 
   const onSubmit = async (data: ClassFormValues) => {
     if (!user || !firestore) {
@@ -71,16 +102,33 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
       return;
     }
     
+    // In a real implementation, you would handle the file upload here
+    // and get a URL back from your storage service (like Firebase Storage).
+    if (data.uploadVideo && !isEditing) { // Simplified for now
+        toast({
+            variant: 'destructive',
+            title: 'Upload Not Implemented',
+            description: 'Direct video upload is not connected yet. Please use the URL option.',
+        });
+        return;
+    }
+
     try {
+        const finalData = {
+            ...data,
+            // If we were uploading, the videoUrl would be set from the storage response
+        };
+
         if (isEditing && classItem.id) {
-            await updateClass(firestore, classItem.id, data);
+            await updateClass(firestore, classItem.id, finalData);
             toast({
                 title: 'Class Updated',
                 description: 'The recorded class has been updated successfully.',
             });
         } else {
              await createClass(firestore, {
-                ...data,
+                ...finalData,
+                videoUrl: finalData.videoUrl || '', // Ensure videoUrl is a string
                 id: uuidv4(),
                 instructorId: user.uid,
             });
@@ -147,23 +195,73 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
         
         <FormField
           control={form.control}
-          name="videoUrl"
+          name="uploadVideo"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Video URL</FormLabel>
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel>Upload Video File</FormLabel>
+                <FormDescription>
+                  Toggle this on to upload a video from your device instead of using a URL.
+                </FormDescription>
+              </div>
               <FormControl>
-                <Input
-                  placeholder="https://www.youtube.com/embed/..."
-                  {...field}
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <FormDescription>
-                Enter the full embed URL for the video (e.g., from YouTube or Vimeo).
-              </FormDescription>
-              <FormMessage />
             </FormItem>
           )}
         />
+
+        {uploadVideo ? (
+          <FormItem>
+              <FormLabel>Video File</FormLabel>
+              <FormControl>
+                 <div 
+                    className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="text-center">
+                        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {fileName ? fileName : 'Click to browse or drag & drop'}
+                        </p>
+                    </div>
+                    <Input 
+                        ref={fileInputRef}
+                        type="file" 
+                        className="sr-only"
+                        accept="video/mp4,video/webm"
+                        onChange={handleFileChange}
+                    />
+                </div>
+              </FormControl>
+              <FormDescription>Select a video file to upload (MP4, WebM).</FormDescription>
+              <FormMessage />
+            </FormItem>
+        ) : (
+          <FormField
+            control={form.control}
+            name="videoUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Video URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://www.youtube.com/embed/..."
+                    {...field}
+                    value={field.value ?? ''}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Enter the full embed URL for the video (e.g., from YouTube or Vimeo).
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
             control={form.control}
