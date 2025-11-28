@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Play } from 'lucide-react';
+import { Play, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { executeCodeAction, type FormState } from '@/app/playground/actions';
 
 const languageTemplates = {
   javascript: `console.log("Hello, JavaScript World!");
@@ -15,7 +16,12 @@ function add(a, b) {
 }
 
 console.log("2 + 3 =", add(2, 3));`,
-  python: `print("Hello, Python World!")`,
+  python: `print("Hello, Python World!")
+
+def greet(name):
+  return f"Hello, {name}"
+
+print(greet("AI"))`,
   java: `public class Main {
     public static void main(String[] args) {
         System.out.println("Hello, Java World!");
@@ -33,28 +39,53 @@ int main() {
     std::cout << "Hello, C++ World!" << std::endl;
     return 0;
 }`,
-  mysql: `SELECT 'Hello, MySQL World!' AS message;`,
+  mysql: `SELECT 'Hello, MySQL World!' AS message;
+  
+-- Try another query:
+-- SELECT p.productName, p.quantityInStock FROM products p WHERE p.productLine = 'Classic Cars' ORDER BY p.quantityInStock DESC LIMIT 5;`,
 };
 
 type Language = keyof typeof languageTemplates;
+
+const languageDisplayNames: Record<Language, string> = {
+  javascript: 'JavaScript',
+  python: 'Python',
+  java: 'Java',
+  c: 'C',
+  cpp: 'C++',
+  mysql: 'MySQL',
+};
+
 
 export function CompilerPlayground() {
   const [code, setCode] = useState<Record<Language, string>>(languageTemplates);
   const [output, setOutput] = useState('Output will appear here...');
   const [activeTab, setActiveTab] = useState<Language>('javascript');
+  
+  const [state, formAction, isPending] = useActionState<FormState, FormData>(
+    executeCodeAction,
+    { message: '' }
+  );
 
   const handleCodeChange = (value: string) => {
     setCode((prev) => ({ ...prev, [activeTab]: value }));
   };
+  
+  useEffect(() => {
+    if (state.message === 'success' && state.data) {
+        setOutput(state.data.output);
+    } else if (state.message.startsWith('Error:')) {
+        setOutput(state.message);
+    }
+  }, [state]);
 
-  const handleRun = () => {
-    setOutput('Running code...');
+  const handleRun = (formData: FormData) => {
+     setOutput('Running code...');
 
     if (activeTab === 'javascript') {
       let capturedOutput = '';
       const originalLog = console.log;
       
-      // Temporarily override console.log to capture output
       console.log = (...args) => {
         capturedOutput += args.map(arg => {
           if (typeof arg === 'object' && arg !== null) {
@@ -74,15 +105,11 @@ export function CompilerPlayground() {
       } catch (error: any) {
         setOutput(`Error: ${error.message}`);
       } finally {
-        // Restore original console.log
         console.log = originalLog;
       }
     } else {
-      // For other languages, keep the simulation
-      setOutput(`Backend execution for ${activeTab} is not implemented yet.
-
-Your code:
-${code[activeTab]}`);
+      // For other languages, use the server action
+      formAction(formData);
     }
   };
 
@@ -92,20 +119,28 @@ ${code[activeTab]}`);
       onValueChange={(value) => setActiveTab(value as Language)}
       className="w-full"
     >
-      <div className="flex items-center justify-between flex-wrap">
-        <TabsList>
-          <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-          <TabsTrigger value="python">Python</TabsTrigger>
-          <TabsTrigger value="java">Java</TabsTrigger>
-          <TabsTrigger value="c">C</TabsTrigger>
-          <TabsTrigger value="cpp">C++</TabsTrigger>
-          <TabsTrigger value="mysql">MySQL</TabsTrigger>
-        </TabsList>
-        <Button onClick={handleRun}>
-          <Play className="mr-2 h-4 w-4" />
-          Run Code
-        </Button>
-      </div>
+      <form action={handleRun}>
+        <input type="hidden" name="language" value={activeTab} />
+        <input type="hidden" name="code" value={code[activeTab]} />
+
+        <div className="flex items-center justify-between flex-wrap gap-2">
+            <TabsList>
+            {Object.keys(languageTemplates).map((lang) => (
+                <TabsTrigger key={lang} value={lang}>
+                {languageDisplayNames[lang as Language]}
+                </TabsTrigger>
+            ))}
+            </TabsList>
+            <Button type="submit" disabled={isPending}>
+            {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <Play className="mr-2 h-4 w-4" />
+            )}
+            Run Code
+            </Button>
+        </div>
+      </form>
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           {Object.keys(languageTemplates).map((lang) => (
