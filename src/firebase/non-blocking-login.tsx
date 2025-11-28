@@ -6,11 +6,20 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
+import { toast } from '@/hooks/use-toast';
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance).catch((error) => {
+    console.error('Anonymous sign in error:', error);
+    toast({
+      variant: 'destructive',
+      title: 'Sign In Failed',
+      description:
+        error.message || 'Could not sign in anonymously. Please try again.',
+    });
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
@@ -32,16 +41,33 @@ export function initiateEmailSignUp(
     .catch((error) => {
       // The onAuthStateChanged listener will handle UI updates on failure
       console.error('Sign up error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description:
+          error.message || 'Could not create your account. Please try again.',
+      });
     });
 }
 
 /** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignIn(
+  authInstance: Auth,
+  email: string,
+  password: string
+): void {
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
+  signInWithEmailAndPassword(authInstance, email, password).catch((error) => {
+    console.error('Sign in error:', error);
+    toast({
+      variant: 'destructive',
+      title: 'Sign In Failed',
+      description:
+        error.message || 'Invalid email or password. Please try again.',
+    });
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
-
 
 /** Initiate user profile update (non-blocking). */
 export function updateUserProfile(
@@ -51,6 +77,11 @@ export function updateUserProfile(
   if (authInstance.currentUser) {
     updateProfile(authInstance.currentUser, updates).catch((error) => {
       console.error('Profile update error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Profile Update Failed',
+        description: error.message || 'Could not update your profile.',
+      });
     });
   }
 }
