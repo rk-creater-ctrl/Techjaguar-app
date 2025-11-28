@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { startLiveSession } from '@/lib/actions';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 interface SavedRecording {
@@ -26,6 +28,7 @@ export default function StudioPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingName, setRecordingName] = useState('');
   const [sessionName, setSessionName] = useState('');
+  const [isFree, setIsFree] = useState(false);
   const [savedRecordings, setSavedRecordings] = useState<SavedRecording[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -123,7 +126,7 @@ export default function StudioPage() {
             title: sessionName,
             description: 'Live session in progress',
             instructorId: user.uid,
-            isFree: false, // All live sessions are premium
+            isFree: isFree,
             meetingUrl: '#', // Placeholder
           });
           setIsStreaming(true);
@@ -247,8 +250,8 @@ export default function StudioPage() {
                         </div>
                     )}
                 </div>
-                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                 <div className="mt-6 flex flex-col space-y-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input 
                             placeholder="Enter session name..." 
                             value={sessionName}
@@ -256,10 +259,16 @@ export default function StudioPage() {
                             disabled={isStreaming}
                             className="flex-grow"
                         />
-                        <Button size="lg" onClick={handleGoLive} disabled={hasCameraPermission !== true}>
+                         <div className="flex items-center space-x-2 rounded-lg border p-4">
+                            <Switch id="free-session" checked={isFree} onCheckedChange={setIsFree} disabled={isStreaming} />
+                            <Label htmlFor="free-session" className="flex-grow">Free Session</Label>
+                        </div>
+                    </div>
+                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <Button size="lg" onClick={handleGoLive} disabled={hasCameraPermission !== true} className="w-full sm:w-auto">
                         {isStreaming ? (
                             <>
-                            <VideoOff className="mr-2" /> Stop
+                            <VideoOff className="mr-2" /> Stop Session
                             </>
                         ) : (
                             <>
@@ -267,26 +276,27 @@ export default function StudioPage() {
                             </>
                         )}
                         </Button>
+                    
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Input 
+                                placeholder="Recording name (optional)..." 
+                                value={recordingName}
+                                onChange={(e) => setRecordingName(e.target.value)}
+                                disabled={!isStreaming || isRecording}
+                                className="flex-grow"
+                            />
+                            {isRecording ? (
+                                <Button onClick={handleStopRecording} variant="destructive">
+                                    <Square className="mr-2" /> Stop
+                                </Button>
+                            ) : (
+                                <Button onClick={handleStartRecording} disabled={!isStreaming}>
+                                    <Disc className="mr-2" /> Record
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Input 
-                            placeholder="Recording name (optional)..." 
-                            value={recordingName}
-                            onChange={(e) => setRecordingName(e.target.value)}
-                            disabled={!isStreaming || isRecording}
-                            className="w-full sm:w-auto"
-                        />
-                        {isRecording ? (
-                            <Button onClick={handleStopRecording} variant="destructive">
-                                <Square className="mr-2" /> Stop
-                            </Button>
-                        ) : (
-                            <Button onClick={handleStartRecording} disabled={!isStreaming}>
-                                <Disc className="mr-2" /> Record
-                            </Button>
-                        )}
-                    </div>
-                </div>
+                 </div>
                 </CardContent>
             </Card>
         </div>
