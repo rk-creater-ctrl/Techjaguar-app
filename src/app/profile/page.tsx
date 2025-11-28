@@ -76,9 +76,9 @@ function AdminSetupCard({ uid }: { uid: string }) {
         <div className="flex items-center gap-4">
           <AlertTriangle className="h-8 w-8 text-destructive" />
           <div>
-            <CardTitle className="font-headline text-destructive">Admin Setup Required</CardTitle>
+            <CardTitle className="font-headline text-destructive">Become the Instructor</CardTitle>
             <CardDescription>
-              To complete the app setup, make your account the official instructor.
+              Claim the instructor role for this application. This can only be done once.
             </CardDescription>
           </div>
         </div>
@@ -88,17 +88,10 @@ function AdminSetupCard({ uid }: { uid: string }) {
           action={formAction}
         >
       <CardContent>
-        <p className="mb-4">Your User ID (UID) is used to identify you as the instructor.</p>
-        <div className="flex items-center gap-2 p-3 rounded-md bg-muted">
-            <input type="hidden" name="uid" value={uid} />
-            <code className="text-sm font-semibold flex-grow">{uid}</code>
-            <Button type="button" variant="ghost" size="icon" onClick={copyUidToClipboard} aria-label="Copy UID">
-                <Copy className="h-4 w-4" />
-            </Button>
-        </div>
-         <p className="mt-4 text-muted-foreground text-sm">
-          Click the button below to set this user account as the instructor for this application. This action can only be done once.
+        <p className="text-sm text-muted-foreground">
+          Click the button below to set your account as the primary instructor. Once claimed, this action cannot be undone and this panel will disappear.
         </p>
+        <input type="hidden" name="uid" value={uid} />
       </CardContent>
       <CardFooter>
           <Button type="submit" disabled={isPending}>
