@@ -15,8 +15,7 @@ import { useUser } from '@/firebase';
 
 export function AppSidebar() {
   const { user } = useUser();
-  // In a real app, this would be a custom claim or role from your database.
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
 
   return (
     <div className="hidden border-r bg-card md:block">

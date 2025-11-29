@@ -26,9 +26,9 @@ function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClas
 
   const CardWrapper = ({ children }: { children: React.ReactNode }) =>
     classItem.isFree ? (
-      <div className="block hover:shadow-lg transition-shadow duration-300 h-full group">
+       <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:shadow-lg transition-shadow duration-300 h-full group">
         {children}
-      </div>
+      </a>
     ) : (
       <Link href="/billing" className="relative h-full block hover:shadow-lg transition-shadow duration-300 group">
         {children}
@@ -90,7 +90,7 @@ function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClas
 export default function ClassesPage() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
   
   const classesQuery = useMemoFirebase(() => {
     if (!firestore) return null;

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { startLiveSession } from '@/lib/actions';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 interface SavedRecording {
@@ -36,7 +37,7 @@ export default function StudioPage() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
 
   useEffect(() => {
     if (!isUserLoading && !isInstructor) {
@@ -61,18 +62,10 @@ export default function StudioPage() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
         setHasCameraPermission(true);
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera and microphone permissions in your browser settings.',
-        });
       }
     };
 
@@ -85,6 +78,12 @@ export default function StudioPage() {
       }
     };
   }, [toast, isInstructor]);
+
+  useEffect(() => {
+    if (hasCameraPermission && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [hasCameraPermission]);
 
   if (isUserLoading || !isInstructor || !firestore) {
     return (
@@ -111,11 +110,6 @@ export default function StudioPage() {
         return;
       }
       if (hasCameraPermission && streamRef.current) {
-        if (videoRef.current) {
-           if (!videoRef.current.srcObject) {
-             videoRef.current.srcObject = streamRef.current;
-           }
-        }
         try {
           await startLiveSession(firestore, {
             title: sessionName,
@@ -216,17 +210,22 @@ export default function StudioPage() {
                 <CardContent>
                 <div className="aspect-video bg-muted rounded-md flex items-center justify-center relative overflow-hidden">
                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    {hasCameraPermission === false && (
+                     {hasCameraPermission !== true && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-4 text-center">
-                            <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
-                            <h3 className="text-lg font-semibold">Camera Access Required</h3>
-                            <p className="text-muted-foreground">Please grant permission to use your camera to go live.</p>
-                        </div>
-                    )}
-                    {hasCameraPermission === null && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                            <p className="mt-2">Requesting camera permission...</p>
+                            {hasCameraPermission === false ? (
+                               <Alert variant="destructive" className="max-w-sm">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Camera Access Denied</AlertTitle>
+                                <AlertDescription>
+                                    Please grant permission to use your camera and microphone in your browser settings to go live.
+                                </AlertDescription>
+                               </Alert>
+                            ) : (
+                                <>
+                                 <Loader2 className="h-8 w-8 animate-spin" />
+                                 <p className="mt-2">Requesting camera permission...</p>
+                                </>
+                            )}
                         </div>
                     )}
                     {isStreaming && (

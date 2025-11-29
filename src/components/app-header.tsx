@@ -24,8 +24,7 @@ import { useUser } from '@/firebase';
 
 export function AppHeader() {
   const { user } = useUser();
-  // In a real app, this would be a custom claim or role from your database.
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">

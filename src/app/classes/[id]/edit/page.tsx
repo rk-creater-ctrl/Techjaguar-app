@@ -21,8 +21,7 @@ export default function EditClassPage({ params }: { params: { id: string }}) {
   const [classItem, setClassItem] = useState<(RecordedClass & { id: string }) | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // In a real app, this would be a custom claim or role from your database.
-  const isInstructor = user?.uid === process.env.NEXT_PUBLIC_INSTRUCTOR_UID;
+  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
 
   useEffect(() => {
     const fetchClass = async () => {
