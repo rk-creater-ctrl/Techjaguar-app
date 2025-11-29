@@ -19,11 +19,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/firebase/non-blocking-login';
-import { Pencil, AlertTriangle, Copy } from 'lucide-react';
-import React, { useRef, useEffect, useActionState } from 'react';
+import { Pencil } from 'lucide-react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
-import { setInstructorAction, type FormState } from './actions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const profileFormSchema = z.object({
@@ -31,78 +29,6 @@ const profileFormSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
-
-
-function AdminSetupCard({ uid }: { uid: string }) {
-  const [state, formAction, isPending] = useActionState<FormState, FormData>(setInstructorAction, { message: '' });
-  const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
-  
-  // A "set" instructor UID is one that is not the placeholder value.
-  const hasInstructorBeenSet = process.env.NEXT_PUBLIC_INSTRUCTOR_UID && process.env.NEXT_PUBLIC_INSTRUCTOR_UID !== 'YOUR_INSTRUCTOR_FIREBASE_UID';
-
-  useEffect(() => {
-    if (state.message === 'success') {
-      toast({
-        title: "Instructor Set!",
-        description: "You are now the instructor. The page will reload to apply changes.",
-      });
-      // A full page reload is needed for the client to read the new .env variable
-      setTimeout(() => window.location.reload(), 2000);
-    } else if (state.message && state.message.startsWith('Error:')) {
-      toast({
-        variant: 'destructive',
-        title: 'An Error Occurred',
-        description: state.message,
-      });
-    }
-  }, [state, toast]);
-  
-  if (hasInstructorBeenSet) {
-    return null;
-  }
-  
-  const copyUidToClipboard = () => {
-    navigator.clipboard.writeText(uid);
-    toast({
-      title: "UID Copied!",
-      description: "Your User ID has been copied to the clipboard.",
-    });
-  };
-
-  return (
-     <Card className="border-destructive">
-      <CardHeader>
-        <div className="flex items-center gap-4">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-          <div>
-            <CardTitle className="font-headline text-destructive">Become the Instructor</CardTitle>
-            <CardDescription>
-              Claim the instructor role for this application. This can only be done once.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-        <form
-          ref={formRef}
-          action={formAction}
-        >
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Click the button below to set your account as the primary instructor. Once claimed, this action cannot be undone and this panel will disappear.
-        </p>
-        <input type="hidden" name="uid" value={uid} />
-      </CardContent>
-      <CardFooter>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? 'Assigning...' : 'Make Me the Instructor'}
-          </Button>
-      </CardFooter>
-      </form>
-    </Card>
-  );
-}
-
 
 function ProfileEditForm() {
     const { user } = useUser();
@@ -222,8 +148,6 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-       <AdminSetupCard uid={user.uid} />
-
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
