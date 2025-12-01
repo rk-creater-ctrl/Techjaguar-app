@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useUser, useFirestore, useStorage } from '@/firebase';
 import {
   Select,
   SelectContent,
@@ -30,8 +30,10 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { createCourse, updateCourse } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
 import type { Course } from '@/lib/schema';
-import React, { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import React, { useRef, useState, useCallback } from 'react';
+import { Upload, Loader2 } from 'lucide-react';
+import { uploadFile, type UploadProgress } from '@/lib/storage';
+import { Progress } from '@/components/ui/progress';
 
 const courseSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -41,7 +43,7 @@ const courseSchema = z.object({
   imageId: z.string({
     required_error: 'Please select an image.',
   }),
-  materialsUrl: z.string().optional(),
+  materialsUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -54,8 +56,10 @@ export function CourseForm({ course }: CreateCourseFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { user } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadState, setUploadState] = useState<UploadProgress | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
   const isEditing = !!course;
@@ -74,23 +78,26 @@ export function CourseForm({ course }: CreateCourseFormProps) {
       description: '',
       price: 29.99,
       isFree: false,
+      materialsUrl: '',
     },
   });
-
+  
   const isFree = form.watch('isFree');
+  
+  const handleUploadProgress = useCallback((progress: UploadProgress) => {
+    setUploadState(progress);
+    if (progress.status === 'success' && progress.downloadURL) {
+      form.setValue('materialsUrl', progress.downloadURL);
+    }
+  }, [form]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && storage) {
       setFileName(file.name);
-      // In a real app, you would start the upload process here.
-      toast({
-          title: 'File Selected',
-          description: `${file.name}`,
-      });
-      // For demonstration, let's assume an upload happens and we get a URL
-      // This would be replaced with the actual URL from your storage service.
-      form.setValue('materialsUrl', 'https://example.com/uploads/' + file.name);
+      setUploadState({ progress: 0, status: 'uploading' });
+      uploadFile(storage, 'course-materials', file, handleUploadProgress);
     }
   };
 
@@ -104,15 +111,6 @@ export function CourseForm({ course }: CreateCourseFormProps) {
         return;
     }
 
-    if (fileName && !data.materialsUrl) {
-        toast({
-            variant: 'destructive',
-            title: 'Upload Not Complete',
-            description: 'File upload is not fully implemented. Please wait for a URL.',
-        });
-        return;
-    }
-    
     const finalData = {
         ...data,
         price: data.isFree ? 0 : data.price,
@@ -228,12 +226,28 @@ export function CourseForm({ course }: CreateCourseFormProps) {
                 className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="text-center">
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        {fileName || (course?.materialsUrl ? 'Replace file' : 'Click to browse or drag & drop')}
-                    </p>
-                    {fileName && <p className="text-xs text-green-600 mt-1">{fileName}</p>}
+                <div className="text-center p-4">
+                    {uploadState?.status === 'uploading' ? (
+                      <>
+                        <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
+                        <p className="mt-2 text-sm text-muted-foreground">Uploading {fileName}...</p>
+                        <Progress value={uploadState.progress} className="w-full mt-2" />
+                      </>
+                    ) : uploadState?.status === 'success' ? (
+                       <>
+                        <Upload className="mx-auto h-8 w-8 text-green-500" />
+                        <p className="mt-2 text-sm text-green-600">
+                            {fileName} uploaded successfully!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {course?.materialsUrl ? 'Replace PDF file' : 'Click to browse or drag & drop'}
+                        </p>
+                      </>
+                    )}
                 </div>
                 <Input 
                     ref={fileInputRef}
@@ -241,10 +255,15 @@ export function CourseForm({ course }: CreateCourseFormProps) {
                     className="sr-only"
                     accept="application/pdf"
                     onChange={handleFileChange}
+                    disabled={uploadState?.status === 'uploading'}
                 />
             </div>
           </FormControl>
-          <FormDescription>Select a PDF file to upload as course material.</FormDescription>
+          <FormDescription>
+            {uploadState?.status === 'success' && form.getValues('materialsUrl') && 
+              <a href={form.getValues('materialsUrl')} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View uploaded file</a>
+            }
+          </FormDescription>
           <FormMessage />
         </FormItem>
 
@@ -264,7 +283,12 @@ export function CourseForm({ course }: CreateCourseFormProps) {
                 <FormControl>
                   <Switch
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                      if (checked) {
+                        form.setValue('price', 0);
+                      }
+                    }}
                   />
                 </FormControl>
               </FormItem>
@@ -290,7 +314,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
           )}
         </div>
 
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={form.formState.isSubmitting || uploadState?.status === 'uploading'}>
           {form.formState.isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Course')}
         </Button>
       </form>

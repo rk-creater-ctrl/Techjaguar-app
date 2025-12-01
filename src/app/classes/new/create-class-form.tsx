@@ -17,31 +17,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useStorage } from '@/firebase';
 import { createClass, updateClass } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
-import { Upload } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import { Upload, Loader2 } from 'lucide-react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Switch } from '@/components/ui/switch';
 import type { RecordedClass } from '@/lib/schema';
+import { uploadFile, type UploadProgress } from '@/lib/storage';
+import { Progress } from '@/components/ui/progress';
 
 
 const classSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   isFree: z.boolean().default(false),
-  videoUrl: z.string().optional(),
-  uploadVideo: z.boolean().default(false),
-}).refine(data => {
-    if (data.uploadVideo) {
-        // If uploading, URL is not required. Logic for handling file would be here.
-        return true;
-    }
-    // If not uploading, URL is required and must be a valid URL.
-    return !!data.videoUrl && z.string().url().safeParse(data.videoUrl).success;
-}, {
-    message: 'Please enter a valid video URL.',
-    path: ['videoUrl'],
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 
@@ -55,10 +46,14 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { user } = useUser();
   const isEditing = !!classItem;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [uploadState, setUploadState] = useState<UploadProgress | null>(null);
+  const [useUrl, setUseUrl] = useState(isEditing ? !!classItem.videoUrl : true);
+
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
@@ -67,27 +62,27 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
         description: classItem.description,
         isFree: classItem.isFree,
         videoUrl: classItem.videoUrl,
-        uploadVideo: !classItem.videoUrl, // A simple heuristic
     } : {
       title: '',
       description: '',
       isFree: false,
       videoUrl: '',
-      uploadVideo: false,
     },
   });
   
-  const uploadVideo = form.watch('uploadVideo');
+  const handleUploadProgress = useCallback((progress: UploadProgress) => {
+    setUploadState(progress);
+    if (progress.status === 'success' && progress.downloadURL) {
+      form.setValue('videoUrl', progress.downloadURL);
+    }
+  }, [form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && storage) {
       setFileName(file.name);
-      // In a real app, you would start the upload process here.
-      toast({
-          title: 'File Selected',
-          description: `${file.name}`,
-      });
+      setUploadState({ progress: 0, status: 'uploading' });
+      uploadFile(storage, 'class-videos', file, handleUploadProgress);
     }
   };
 
@@ -102,33 +97,34 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
       return;
     }
     
-    // In a real implementation, you would handle the file upload here
-    // and get a URL back from your storage service (like Firebase Storage).
-    if (data.uploadVideo && !isEditing) { // Simplified for now
-        toast({
-            variant: 'destructive',
-            title: 'Upload Not Implemented',
-            description: 'Direct video upload is not connected yet. Please use the URL option.',
-        });
-        return;
+    if (!useUrl && (!data.videoUrl || uploadState?.status !== 'success')) {
+       toast({
+        variant: 'destructive',
+        title: 'Upload Not Complete',
+        description: 'Please wait for the video to finish uploading before saving.',
+      });
+      return;
+    }
+    
+    if (useUrl && (!data.videoUrl || !z.string().url().safeParse(data.videoUrl).success)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid URL',
+        description: 'Please provide a valid video URL.',
+      });
+      return;
     }
 
     try {
-        const finalData = {
-            ...data,
-            // If we were uploading, the videoUrl would be set from the storage response
-        };
-
         if (isEditing && classItem.id) {
-            await updateClass(firestore, classItem.id, finalData);
+            await updateClass(firestore, classItem.id, data);
             toast({
                 title: 'Class Updated',
                 description: 'The recorded class has been updated successfully.',
             });
         } else {
              await createClass(firestore, {
-                ...finalData,
-                videoUrl: finalData.videoUrl || '', // Ensure videoUrl is a string
+                ...data,
                 id: uuidv4(),
                 instructorId: user.uid,
             });
@@ -193,28 +189,22 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="uploadVideo"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel>Upload Video File</FormLabel>
-                <FormDescription>
-                  Toggle this on to upload a video from your device instead of using a URL.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+            <FormLabel>Video Source</FormLabel>
+            <FormDescription>
+                {useUrl ? 'Provide a URL from YouTube, Vimeo, etc.' : 'Upload a video file from your computer.'}
+            </FormDescription>
+            </div>
+            <FormControl>
+            <Switch
+                checked={!useUrl}
+                onCheckedChange={(checked) => setUseUrl(!checked)}
+            />
+            </FormControl>
+        </FormItem>
 
-        {uploadVideo ? (
+        {!useUrl ? (
           <FormItem>
               <FormLabel>Video File</FormLabel>
               <FormControl>
@@ -222,11 +212,28 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
                     className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            {fileName ? fileName : 'Click to browse or drag & drop'}
-                        </p>
+                    <div className="text-center p-4">
+                        {uploadState?.status === 'uploading' ? (
+                          <>
+                            <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
+                            <p className="mt-2 text-sm text-muted-foreground">Uploading {fileName}...</p>
+                            <Progress value={uploadState.progress} className="w-full mt-2" />
+                          </>
+                        ) : uploadState?.status === 'success' ? (
+                          <>
+                            <Upload className="mx-auto h-8 w-8 text-green-500" />
+                            <p className="mt-2 text-sm text-green-600">
+                                {fileName} uploaded successfully!
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Click to browse or drag & drop a video file
+                            </p>
+                          </>
+                        )}
                     </div>
                     <Input 
                         ref={fileInputRef}
@@ -234,6 +241,7 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
                         className="sr-only"
                         accept="video/mp4,video/webm"
                         onChange={handleFileChange}
+                        disabled={uploadState?.status === 'uploading'}
                     />
                 </div>
               </FormControl>
@@ -285,7 +293,7 @@ export function CreateClassForm({ classItem }: CreateClassFormProps) {
         />
 
 
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={form.formState.isSubmitting || uploadState?.status === 'uploading'}>
           {form.formState.isSubmitting ? (isEditing ? 'Saving...' : 'Adding...') : (isEditing ? 'Save Changes' : 'Add Class')}
         </Button>
       </form>
