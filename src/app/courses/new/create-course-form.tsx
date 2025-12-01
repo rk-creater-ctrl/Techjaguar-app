@@ -30,6 +30,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { createCourse, updateCourse } from '@/lib/actions';
 import { v4 as uuidv4 } from 'uuid';
 import type { Course } from '@/lib/schema';
+import React, { useRef, useState } from 'react';
+import { Upload } from 'lucide-react';
 
 const courseSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -39,6 +41,7 @@ const courseSchema = z.object({
   imageId: z.string({
     required_error: 'Please select an image.',
   }),
+  materialsUrl: z.string().optional(),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -52,6 +55,8 @@ export function CourseForm({ course }: CreateCourseFormProps) {
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const isEditing = !!course;
 
@@ -63,6 +68,7 @@ export function CourseForm({ course }: CreateCourseFormProps) {
       price: course.price,
       isFree: course.isFree,
       imageId: course.imageId,
+      materialsUrl: course.materialsUrl,
     } : {
       title: '',
       description: '',
@@ -73,12 +79,36 @@ export function CourseForm({ course }: CreateCourseFormProps) {
 
   const isFree = form.watch('isFree');
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      // In a real app, you would start the upload process here.
+      toast({
+          title: 'File Selected',
+          description: `${file.name}`,
+      });
+      // For demonstration, let's assume an upload happens and we get a URL
+      // This would be replaced with the actual URL from your storage service.
+      form.setValue('materialsUrl', 'https://example.com/uploads/' + file.name);
+    }
+  };
+
   const onSubmit = async (data: CourseFormValues) => {
     if (!user || !firestore) {
         toast({
             variant: 'destructive',
             title: 'Authentication Error',
             description: 'You must be logged in to perform this action.',
+        });
+        return;
+    }
+
+    if (fileName && !data.materialsUrl) {
+        toast({
+            variant: 'destructive',
+            title: 'Upload Not Complete',
+            description: 'File upload is not fully implemented. Please wait for a URL.',
         });
         return;
     }
@@ -190,6 +220,34 @@ export function CourseForm({ course }: CreateCourseFormProps) {
             </FormItem>
           )}
         />
+        
+        <FormItem>
+          <FormLabel>Course Materials (PDF)</FormLabel>
+          <FormControl>
+              <div 
+                className="relative flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="text-center">
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {fileName || (course?.materialsUrl ? 'Replace file' : 'Click to browse or drag & drop')}
+                    </p>
+                    {fileName && <p className="text-xs text-green-600 mt-1">{fileName}</p>}
+                </div>
+                <Input 
+                    ref={fileInputRef}
+                    type="file" 
+                    className="sr-only"
+                    accept="application/pdf"
+                    onChange={handleFileChange}
+                />
+            </div>
+          </FormControl>
+          <FormDescription>Select a PDF file to upload as course material.</FormDescription>
+          <FormMessage />
+        </FormItem>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField

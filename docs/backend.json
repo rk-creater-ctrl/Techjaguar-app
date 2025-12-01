@@ -38,6 +38,11 @@
           "type": "string",
           "description": "URL of the image representing the course.",
           "format": "uri"
+        },
+        "materialsUrl": {
+          "type": "string",
+          "description": "URL of the supplementary materials for the course, such as a PDF.",
+          "format": "uri"
         }
       },
       "required": [

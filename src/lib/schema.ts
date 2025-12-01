@@ -31,6 +31,7 @@ export interface Course {
   price: number;
   isFree: boolean;
   imageId: string;
+  materialsUrl?: string;
 }
 
 export interface Lecture {

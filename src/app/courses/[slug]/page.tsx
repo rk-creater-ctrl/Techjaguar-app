@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, PlayCircle, Loader2, Trash2, Pencil } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, Loader2, Trash2, Pencil, Download } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useFirestore, useUser } from '@/firebase';
@@ -159,6 +159,25 @@ export default function CourseDetailPage({
                   <p className="text-muted-foreground">{course.description}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <h2 className="text-2xl font-semibold font-headline">
+                Course Materials
+              </h2>
+            </CardHeader>
+            <CardContent>
+               {course.materialsUrl ? (
+                 <a href={course.materialsUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </Button>
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground">No materials available for this course.</p>
+                )}
             </CardContent>
           </Card>
           <Card>
