@@ -58,12 +58,11 @@ service cloud.firestore {
     
     /**
      * @description Checks if the authenticated user is the designated instructor for the app.
-     * The instructor UID is stored in a document for the rules to access.
+     * The instructor email is hardcoded here for authorization purposes.
      * @returns {boolean} True if the user is the instructor, false otherwise.
      */
     function isAppInstructor() {
-        return isSignedIn() && exists(/databases/$(database)/documents/app-config/instructor) &&
-               get(/databases/$(database)/documents/app-config/instructor).data.uid == request.auth.uid;
+        return isSignedIn() && request.auth.token.email == 'codenexus199@gmail.com';
     }
 
     /**
@@ -118,19 +117,6 @@ service cloud.firestore {
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
-    
-    /**
-     * @description
-     *  - A special document to hold the UID of the application instructor.
-     *  - Only the currently designated instructor can write to it, but it should rarely change.
-     *  - Public read is required for the `isAppInstructor` function to work correctly.
-     * @path /app-config/instructor
-     */
-    match /app-config/instructor {
-        allow get: if true;
-        allow write: if isAppInstructor() || request.auth.uid == request.resource.data.uid;
-    }
-
 
     /**
      * @description
@@ -155,9 +141,9 @@ service cloud.firestore {
     match /categories/{categoryId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isAppInstructor();
+      allow update: if isAppInstructor();
+      allow delete: if isAppInstructor();
     }
 
     /**
@@ -170,8 +156,8 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isResourceInstructor();
-      allow update: if resource != null && isOwnedByInstructor(resource.data.instructorId);
-      allow delete: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+      allow update: if isAppInstructor() || (resource != null && isOwnedByInstructor(resource.data.instructorId));
+      allow delete: if isAppInstructor() || (resource != null && isOwnedByInstructor(resource.data.instructorId));
     }
     
     /**
@@ -184,8 +170,8 @@ service cloud.firestore {
         allow get: if true;
         allow list: if true;
         allow create: if isResourceInstructor();
-        allow update: if resource != null && isOwnedByInstructor(resource.data.instructorId);
-        allow delete: if resource != null && isOwnedByInstructor(resource.data.instructorId);
+        allow update: if isAppInstructor() || (resource != null && isOwnedByInstructor(resource.data.instructorId));
+        allow delete: if isAppInstructor() || (resource != null && isOwnedByInstructor(resource.data.instructorId));
     }
 
     /**
@@ -198,8 +184,8 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isResourceInstructor();
-      allow update: if false; // Sessions are immutable for now
-      allow delete: if false; // Deletions should be handled by a backend process
+      allow update: if isAppInstructor();
+      allow delete: if isAppInstructor();
     }
 
     /**
@@ -212,9 +198,9 @@ service cloud.firestore {
     match /courses/{courseId}/lectures/{lectureId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
-        allow update: if isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
-        allow delete: if isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid;
+        allow create: if isAppInstructor() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
+        allow update: if isAppInstructor() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
+        allow delete: if isAppInstructor() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
     }
 
     /**
