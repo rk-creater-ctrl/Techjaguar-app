@@ -16,7 +16,7 @@ export default function CreateClassPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
 
   useEffect(() => {
     if (!isUserLoading && !isInstructor) {

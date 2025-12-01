@@ -53,7 +53,7 @@ function LiveSessionCard({ session }: { session: WithId<LiveSession> }) {
 export default function LiveSessionsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
   
   const liveSessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;

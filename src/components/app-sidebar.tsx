@@ -15,7 +15,7 @@ import { useUser } from '@/firebase';
 
 export function AppSidebar() {
   const { user } = useUser();
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
 
   return (
     <div className="hidden border-r bg-card md:block">

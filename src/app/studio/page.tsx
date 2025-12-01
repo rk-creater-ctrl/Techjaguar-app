@@ -37,7 +37,7 @@ export default function StudioPage() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
 
   useEffect(() => {
     if (!isUserLoading && !isInstructor) {
@@ -109,7 +109,7 @@ export default function StudioPage() {
         });
         return;
       }
-      if (hasCameraPermission && streamRef.current) {
+      if (hasCameraPermission && streamRef.current && user) {
         try {
           await startLiveSession(firestore, {
             title: sessionName,

@@ -21,7 +21,7 @@ export default function EditClassPage({ params }: { params: { id: string }}) {
   const [classItem, setClassItem] = useState<(RecordedClass & { id: string }) | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
 
   useEffect(() => {
     const fetchClass = async () => {

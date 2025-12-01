@@ -90,7 +90,7 @@ function ClassCard({ classItem, isInstructor }: { classItem: WithId<RecordedClas
 export default function ClassesPage() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const isInstructor = user?.email === process.env.NEXT_PUBLIC_INSTRUCTOR_EMAIL;
+  const isInstructor = user?.email === 'codenexus199@gmail.com';
   
   const classesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
