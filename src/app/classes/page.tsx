@@ -9,7 +9,11 @@ import { ClassesPageClient } from './page-client';
 async function getIsInstructor() {
   try {
     const sessionCookie = cookies().get('__session')?.value || '';
-    const decodedClaims = await auth().verifySessionCookie(sessionCookie, true);
+    if (!sessionCookie) return false;
+    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
+      sessionCookie,
+      true
+    );
     return decodedClaims.email === 'codenexus199@gmail.com';
   } catch (error) {
     return false;
@@ -18,7 +22,10 @@ async function getIsInstructor() {
 
 async function getClasses() {
   const firestore = getAdminDb();
-  const classesQuery = query(collection(firestore, 'classes'), orderBy('createdAt', 'desc'));
+  const classesQuery = query(
+    collection(firestore, 'classes'),
+    orderBy('createdAt', 'desc')
+  );
   const querySnapshot = await getDocs(classesQuery);
   return querySnapshot.docs.map((doc) => ({
     id: doc.id,

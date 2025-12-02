@@ -9,7 +9,11 @@ import { CourseDetailClient } from './page-client';
 async function getIsInstructor() {
   try {
     const sessionCookie = cookies().get('__session')?.value || '';
-    const decodedClaims = await auth().verifySessionCookie(sessionCookie, true);
+    if (!sessionCookie) return false;
+    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
+      sessionCookie,
+      true
+    );
     return decodedClaims.email === 'codenexus199@gmail.com';
   } catch (error) {
     return false;

@@ -1,4 +1,12 @@
 import type {NextConfig} from 'next';
+import webpack from 'webpack';
+
+const {
+  FIREBASE_PROJECT_ID,
+  FIREBASE_CLIENT_EMAIL,
+  FIREBASE_PRIVATE_KEY,
+  GEMINI_API_KEY,
+} = process.env;
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -29,6 +37,17 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  webpack: (config, {isServer}) => {
+    config.plugins.push(
+      new webpack.EnvironmentPlugin({
+        FIREBASE_PROJECT_ID,
+        FIREBASE_CLIENT_EMAIL,
+        FIREBASE_PRIVATE_KEY,
+        GEMINI_API_KEY,
+      })
+    );
+    return config;
   },
 };
 
