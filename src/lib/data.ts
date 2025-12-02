@@ -5,7 +5,7 @@ import type {
   RecordedClass as RecordedClassSchema
 } from './schema';
 import { collection, getDocs, getDoc, query, where, doc, Firestore } from 'firebase/firestore';
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { getSubscriptionByUserId as getMockSubscription } from './mock-data';
 
 export interface Lecture extends LectureSchema {
@@ -35,7 +35,9 @@ const slugify = (title: string) =>
     .replace(/(^-|-$)+/g, '');
 
 const getDb = (db?: Firestore) => {
-    return db || adminDb;
+    // For server-side rendering and data fetching, always use the Admin DB.
+    // A client-side Firestore instance can be passed for client-only operations if needed.
+    return db || getAdminDb();
 }
 
 export const getCourses = async (db?: Firestore): Promise<Course[]> => {
@@ -69,14 +71,14 @@ export const getCourseBySlug = async (
   const q = query(coursesRef);
   const querySnapshot = await getDocs(q);
 
-  for (const doc of querySnapshot.docs) {
-    const data = doc.data() as CourseSchema;
+  for (const docRef of querySnapshot.docs) {
+    const data = docRef.data() as CourseSchema;
     if (slugify(data.title) === slug) {
       const image = PlaceHolderImages.find((img) => img.id === data.imageId);
       
       let lectures: Lecture[] = [];
       if (fetchLectures) {
-        const lecturesSnapshot = await getDocs(collection(firestore, 'courses', doc.id, 'lectures'));
+        const lecturesSnapshot = await getDocs(collection(firestore, 'courses', docRef.id, 'lectures'));
         lectures = lecturesSnapshot.docs.map(lectureDoc => ({
           ...(lectureDoc.data() as LectureSchema),
           id: lectureDoc.id,
@@ -86,7 +88,7 @@ export const getCourseBySlug = async (
 
       return {
         ...data,
-        id: doc.id,
+        id: docRef.id,
         slug: slugify(data.title),
         progress: 30,
         imageUrl: image?.imageUrl,

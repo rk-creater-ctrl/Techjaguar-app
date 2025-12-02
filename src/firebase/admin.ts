@@ -1,10 +1,12 @@
-'use server';
-
 import * as admin from 'firebase-admin';
 
-if (!admin.apps.length) {
+function initializeAdminApp() {
+  if (admin.apps.length > 0) {
+    return admin.app();
+  }
+  
   try {
-    admin.initializeApp({
+    return admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -13,7 +15,16 @@ if (!admin.apps.length) {
     });
   } catch (error: any) {
     console.error('Firebase admin initialization error', error.stack);
+    throw new Error('Could not initialize Firebase Admin SDK. Please check server logs and environment variables.');
   }
 }
 
-export const adminDb = admin.firestore();
+let adminDbInstance: admin.firestore.Firestore | null = null;
+
+export function getAdminDb() {
+  if (!adminDbInstance) {
+    initializeAdminApp();
+    adminDbInstance = admin.firestore();
+  }
+  return adminDbInstance;
+}

@@ -1,4 +1,4 @@
-'use client';
+'use server';
 import {
   Card,
   CardContent,
@@ -7,55 +7,20 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { CreateClassForm } from '@/app/classes/new/create-class-form';
-import { useFirestore, useUser } from '@/firebase';
-import { useRouter, notFound } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { notFound } from 'next/navigation';
 import { getClassById } from '@/lib/data';
-import type { RecordedClass } from '@/lib/schema';
-import { Loader2 } from 'lucide-react';
+import { getAdminDb } from '@/firebase/admin';
 
-export default function EditClassPage({ params }: { params: { id: string }}) {
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
-  const firestore = useFirestore();
-  const [classItem, setClassItem] = useState<(RecordedClass & { id: string }) | null>(null);
-  const [loading, setLoading] = useState(true);
+export default async function EditClassPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const firestore = getAdminDb();
+  const classItem = await getClassById(params.id, firestore);
 
-  const isInstructor = user?.email === 'codenexus199@gmail.com';
-
-  useEffect(() => {
-    const fetchClass = async () => {
-      if (!firestore) return;
-      setLoading(true);
-      const fetchedClass = await getClassById(params.id, firestore);
-      if (fetchedClass) {
-        setClassItem(fetchedClass);
-      } else {
-        notFound();
-      }
-      setLoading(false);
-    };
-
-    fetchClass();
-  }, [firestore, params.id]);
-
-  useEffect(() => {
-    if (!isUserLoading && !isInstructor) {
-      // Redirect non-instructors away
-      router.replace('/classes');
-    }
-  }, [isUserLoading, isInstructor, router]);
-
-  if (isUserLoading || loading) {
-    return (
-       <div className="flex h-full w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-       </div>
-    );
-  }
-  
-  if (!isInstructor) {
-     return null; // Or show an access denied message
+  if (!classItem) {
+    notFound();
   }
 
   return (
@@ -69,7 +34,7 @@ export default function EditClassPage({ params }: { params: { id: string }}) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CreateClassForm classItem={classItem as RecordedClass & { id: string }} />
+            <CreateClassForm classItem={classItem} />
           </CardContent>
         </Card>
       </div>

@@ -21,9 +21,9 @@ import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/course-card';
-import { getCourses, type Course } from '@/lib/data';
-import { useFirestore } from '@/firebase';
+import { type Course } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCourses } from './data';
 
 interface CourseOption {
   value: string;
@@ -45,13 +45,11 @@ export function RecommendationsForm() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const firestore = useFirestore();
 
   useEffect(() => {
     const fetchCourses = async () => {
-      if (!firestore) return;
       setLoading(true);
-      const fetchedCourses = await getCourses(firestore);
+      const fetchedCourses = await getCourses();
       setCourses(fetchedCourses);
       setCourseOptions(
         fetchedCourses.map((course) => ({
@@ -63,7 +61,7 @@ export function RecommendationsForm() {
     };
 
     fetchCourses();
-  }, [firestore]);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -83,8 +81,6 @@ export function RecommendationsForm() {
   const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     const formData = new FormData(evt.currentTarget);
-    // Append the full courses list to the form data for the server action
-    formData.append('allCourses', JSON.stringify(courses));
     form.trigger().then((isValid) => {
       if (isValid) {
         formAction(formData);
@@ -97,8 +93,8 @@ export function RecommendationsForm() {
       <div className="space-y-8">
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-4">
-             <Skeleton className="h-8 w-1/2" />
-             <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
             <div className="grid grid-cols-2 gap-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-3">
@@ -111,11 +107,11 @@ export function RecommendationsForm() {
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-24 w-full" />
-             <Skeleton className="h-8 w-1/3 mt-4" />
+            <Skeleton className="h-8 w-1/3 mt-4" />
             <Skeleton className="h-10 w-full" />
           </div>
         </div>
-         <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-10 w-48" />
       </div>
     );
   }

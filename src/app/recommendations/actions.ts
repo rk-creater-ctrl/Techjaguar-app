@@ -6,13 +6,12 @@ import {
   type PersonalizedCourseRecommendationsOutput,
 } from '@/ai/flows/personalized-course-recommendations';
 import { getCourses } from '@/lib/data';
-import { initializeFirebase } from '@/firebase';
+import { getAdminDb } from '@/firebase/admin';
 
 const schema = z.object({
   learningHistory: z.array(z.string()),
   interests: z.string().min(1, 'Please enter at least one interest.'),
   userPreferences: z.string(),
-  allCourses: z.any(), // We will pass the courses from the client
 });
 
 export type FormState = {
@@ -26,14 +25,10 @@ export async function getRecommendationsAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  // The courses are now passed as a stringified JSON from the client
-  const allCourses = JSON.parse(formData.get('allCourses') as string || '[]');
-
   const validatedFields = schema.safeParse({
     learningHistory: formData.getAll('learningHistory'),
     interests: formData.get('interests'),
     userPreferences: formData.get('userPreferences'),
-    allCourses: allCourses,
   });
 
   if (!validatedFields.success) {
@@ -49,6 +44,10 @@ export async function getRecommendationsAction(
   }
 
   try {
+    // This is a server action, so we must use the Admin SDK to fetch data.
+    const adminDb = getAdminDb();
+    const allCourses = await getCourses(adminDb);
+
     const learningHistoryTitles = validatedFields.data.learningHistory.map(courseId => {
         const course = allCourses.find((c: any) => c.id === courseId);
         return course ? course.title : courseId;
