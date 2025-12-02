@@ -27,7 +27,7 @@ export default function EditCoursePage({ params }: { params: { slug: string }}) 
     const fetchCourse = async () => {
       if (!firestore) return;
       setLoading(true);
-      const fetchedCourse = await getCourseBySlug(firestore, params.slug, false); // Don't fetch lectures
+      const fetchedCourse = await getCourseBySlug(params.slug, false, firestore); // Don't fetch lectures
       if (fetchedCourse) {
         setCourse(fetchedCourse as Course);
       } else {

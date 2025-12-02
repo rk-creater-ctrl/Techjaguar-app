@@ -48,7 +48,7 @@ export default function CourseDetailPage({
     const fetchCourse = async () => {
       if (!firestore) return;
       setLoading(true);
-      const fetchedCourse = await getCourseBySlug(firestore, params.slug);
+      const fetchedCourse = await getCourseBySlug(params.slug, true, firestore);
       if (fetchedCourse) {
         setCourse(fetchedCourse);
       } else {

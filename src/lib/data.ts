@@ -1,11 +1,11 @@
-import { PlaceHolderImages } from './placeholder-images';
+import { PlaceHolderImages } from '@/app/lib/placeholder-images';
 import type {
   Course as CourseSchema,
   Lecture as LectureSchema,
   RecordedClass as RecordedClassSchema
 } from './schema';
-import { collection, getDocs, getDoc, query, where, doc } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
+import { collection, getDocs, getDoc, query, where, doc, Firestore } from 'firebase/firestore';
+import { adminDb } from '@/firebase/admin';
 import { getSubscriptionByUserId as getMockSubscription } from './mock-data';
 
 export interface Lecture extends LectureSchema {
@@ -34,12 +34,13 @@ const slugify = (title: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 
-export const getCourses = async (db: Firestore): Promise<Course[]> => {
-  if (!db) {
-    console.error("Firestore instance is not available in getCourses");
-    return [];
-  }
-  const coursesCol = collection(db, 'courses');
+const getDb = (db?: Firestore) => {
+    return db || adminDb;
+}
+
+export const getCourses = async (db?: Firestore): Promise<Course[]> => {
+  const firestore = getDb(db);
+  const coursesCol = collection(firestore, 'courses');
   const courseSnapshot = await getDocs(coursesCol);
   const courseList = courseSnapshot.docs.map((doc) => {
     const data = doc.data() as CourseSchema;
@@ -59,15 +60,12 @@ export const getCourses = async (db: Firestore): Promise<Course[]> => {
 };
 
 export const getCourseBySlug = async (
-  db: Firestore,
   slug: string,
-  fetchLectures: boolean = true
+  fetchLectures: boolean = true,
+  db?: Firestore
 ): Promise<Course | undefined> => {
-   if (!db) {
-    console.error("Firestore instance is not available in getCourseBySlug");
-    return undefined;
-  }
-  const coursesRef = collection(db, 'courses');
+   const firestore = getDb(db);
+  const coursesRef = collection(firestore, 'courses');
   const q = query(coursesRef);
   const querySnapshot = await getDocs(q);
 
@@ -78,7 +76,7 @@ export const getCourseBySlug = async (
       
       let lectures: Lecture[] = [];
       if (fetchLectures) {
-        const lecturesSnapshot = await getDocs(collection(db, 'courses', doc.id, 'lectures'));
+        const lecturesSnapshot = await getDocs(collection(firestore, 'courses', doc.id, 'lectures'));
         lectures = lecturesSnapshot.docs.map(lectureDoc => ({
           ...(lectureDoc.data() as LectureSchema),
           id: lectureDoc.id,
@@ -111,14 +109,11 @@ export const getSubscriptionByUserId = async (
 
 
 export const getClassById = async (
-  db: Firestore,
   classId: string,
+  db?: Firestore
 ): Promise<(RecordedClassSchema & { id: string }) | undefined> => {
-   if (!db) {
-    console.error("Firestore instance is not available in getClassById");
-    return undefined;
-  }
-  const classRef = doc(db, 'classes', classId);
+   const firestore = getDb(db);
+  const classRef = doc(firestore, 'classes', classId);
   const docSnap = await getDoc(classRef);
 
   if (docSnap.exists()) {

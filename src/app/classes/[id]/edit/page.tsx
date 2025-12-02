@@ -27,7 +27,7 @@ export default function EditClassPage({ params }: { params: { id: string }}) {
     const fetchClass = async () => {
       if (!firestore) return;
       setLoading(true);
-      const fetchedClass = await getClassById(firestore, params.id);
+      const fetchedClass = await getClassById(params.id, firestore);
       if (fetchedClass) {
         setClassItem(fetchedClass);
       } else {

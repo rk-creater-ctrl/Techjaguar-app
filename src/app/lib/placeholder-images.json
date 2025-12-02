@@ -1,0 +1,52 @@
+{
+  "placeholderImages": [
+    {
+      "id": "web-dev-intro",
+      "description": "A developer coding on a laptop with a dark background and colorful code.",
+      "imageUrl": "https://images.unsplash.com/photo-1544980919-e17526d4ed0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjb2RpbmclMjB3ZWItZGV2ZWxvcG1lbnR8ZW58MHx8fHwxNzYzNTY1MzEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coding web-development"
+    },
+    {
+      "id": "js-advanced",
+      "description": "Close-up of JavaScript code on a modern desktop setup.",
+      "imageUrl": "https://images.unsplash.com/photo-1542831371-29b0f74f9713?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxKYXZhU2NyaXB0JTIwY29kZXxlbnwwfHx8fDE3NjM1NjUzMTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "JavaScript code"
+    },
+    {
+      "id": "react-hooks",
+      "description": "Abstract visualization of React components and hooks.",
+      "imageUrl": "https://images.unsplash.com/photo-1641302109113-67653c0fd208?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxSZWFjdCUyMGxvZ298ZW58MHx8fHwxNzYzNTY1MzEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "React logo"
+    },
+    {
+      "id": "data-science-101",
+      "description": "Futuristic data visualization with glowing charts and graphs.",
+      "imageUrl": "https://images.unsplash.com/photo-1666875753105-c63a6f3bdc86?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxkYXRhJTIwdmlzdWFsaXphdGlvbnxlbnwwfHx8fDE3NjM1MzE5NDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "data visualization"
+    },
+    {
+      "id": "python-mastery",
+      "description": "The Python language logo on a sleek, dark background.",
+      "imageUrl": "https://images.unsplash.com/photo-1758782362142-a84a8a1435bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxQeXRob24lMjBsb2dvfGVufDB8fHx8MTc2MzU2NTMxM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Python logo"
+    },
+    {
+      "id": "ux-design-fundamentals",
+      "description": "A designer sketching wireframes on a tablet.",
+      "imageUrl": "https://images.unsplash.com/photo-1622117515670-fcb02499491f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxkZXNpZ24lMjB3aXJlZnJhbWV8ZW58MHx8fHwxNzYzNDk4Nzk2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "design wireframe"
+    },
+    {
+      "id": "ai-machine-learning",
+      "description": "An illustration of a neural network or AI brain.",
+      "imageUrl": "https://images.unsplash.com/photo-1674027444485-cec3da58eef4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhcnRpZmljaWFsJTIwaW50ZWxsaWdlbmNlfGVufDB8fHx8MTc2MzUyMTQ2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "artificial intelligence"
+    },
+    {
+      "id": "digital-marketing",
+      "description": "A dashboard showing various digital marketing analytics and metrics.",
+      "imageUrl": "https://images.unsplash.com/photo-1686061594225-3e92c0cd51b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYXJrZXRpbmclMjBhbmFseXRpY3N8ZW58MHx8fHwxNzYzNTA5NTQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "marketing analytics"
+    }
+  ]
+}
