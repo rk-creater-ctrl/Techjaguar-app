@@ -1,4 +1,4 @@
-'use server';
+'use client';
 import {
   Card,
   CardContent,
@@ -8,19 +8,49 @@ import {
 } from '@/components/ui/card';
 import { CreateClassForm } from '@/app/classes/new/create-class-form';
 import { notFound } from 'next/navigation';
-import { getClassById } from '@/lib/data';
 import { getAdminDb } from '@/firebase/admin';
+import { useFirestore } from '@/firebase';
+import { useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { RecordedClass } from '@/lib/schema';
+import { Loader2 } from 'lucide-react';
+
 
 export default async function EditClassPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const firestore = getAdminDb();
-  const classItem = await getClassById(params.id, firestore);
+  const firestore = useFirestore();
+  const [classItem, setClassItem] = useState<(RecordedClass & { id: string }) | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!classItem) {
-    notFound();
+  useEffect(() => {
+    const fetchClass = async () => {
+        if (!firestore) return;
+        setLoading(true);
+        const classRef = doc(firestore, 'classes', params.id);
+        const docSnap = await getDoc(classRef);
+
+        if (docSnap.exists()) {
+            setClassItem({
+                ...(docSnap.data() as RecordedClass),
+                id: docSnap.id,
+            });
+        } else {
+            notFound();
+        }
+        setLoading(false);
+    }
+    fetchClass();
+  }, [firestore, params.id]);
+
+  if (loading) {
+    return (
+        <div className="flex h-full w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
   }
 
   return (
@@ -34,7 +64,7 @@ export default async function EditClassPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CreateClassForm classItem={classItem} />
+            <CreateClassForm classItem={classItem!} />
           </CardContent>
         </Card>
       </div>

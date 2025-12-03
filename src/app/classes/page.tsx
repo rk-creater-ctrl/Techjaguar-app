@@ -1,41 +1,51 @@
-'use server';
+'use client';
 import { getAdminDb } from '@/firebase/admin';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { RecordedClass } from '@/lib/schema';
 import { cookies } from 'next/headers';
 import { auth } from 'firebase-admin';
 import { ClassesPageClient } from './page-client';
+import { useFirestore, useUser } from '@/firebase';
+import { useEffect, useState } from 'react';
+import type { WithId } from '@/firebase/firestore/use-collection';
 
-async function getIsInstructor() {
-  try {
-    const sessionCookie = cookies().get('__session')?.value || '';
-    if (!sessionCookie) return false;
-    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
-      sessionCookie,
-      true
-    );
-    return decodedClaims.email === 'codenexus199@gmail.com';
-  } catch (error) {
-    return false;
+
+export default function ClassesPage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const [recordedClasses, setRecordedClasses] = useState<WithId<RecordedClass>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isInstructor, setIsInstructor] = useState(false);
+
+  useEffect(() => {
+    async function getClasses() {
+      if (firestore) {
+        setLoading(true);
+        const classesQuery = query(
+          collection(firestore, 'classes'),
+          orderBy('createdAt', 'desc')
+        );
+        const querySnapshot = await getDocs(classesQuery);
+        const classes = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as WithId<RecordedClass>[];
+        setRecordedClasses(classes);
+        setLoading(false);
+      }
+    }
+    getClasses();
+  }, [firestore]);
+
+  useEffect(() => {
+    if (user) {
+      setIsInstructor(user.email === 'codenexus199@gmail.com');
+    }
+  }, [user]);
+
+  if (loading) {
+    return <ClassesPageClient recordedClasses={[]} isInstructor={isInstructor} />;
   }
-}
-
-async function getClasses() {
-  const firestore = getAdminDb();
-  const classesQuery = query(
-    collection(firestore, 'classes'),
-    orderBy('createdAt', 'desc')
-  );
-  const querySnapshot = await getDocs(classesQuery);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as (RecordedClass & { id: string })[];
-}
-
-export default async function ClassesPage() {
-  const recordedClasses = await getClasses();
-  const isInstructor = await getIsInstructor();
 
   return (
     <ClassesPageClient

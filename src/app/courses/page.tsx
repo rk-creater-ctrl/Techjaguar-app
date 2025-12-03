@@ -1,27 +1,42 @@
-'use server';
-import { getCourses } from '@/lib/data';
+'use client';
+import { getCoursesClient } from '@/lib/client-data';
 import { getAdminDb } from '@/firebase/admin';
 import { auth } from 'firebase-admin';
 import { cookies } from 'next/headers';
 import { PageClient } from './page-client';
+import { useFirestore, useUser } from '@/firebase';
+import { useEffect, useState } from 'react';
+import type { Course } from '@/lib/data';
 
-async function getIsInstructor() {
-  try {
-    const sessionCookie = cookies().get('__session')?.value || '';
-    if (!sessionCookie) return false;
-    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
-      sessionCookie,
-      true
-    );
-    return decodedClaims.email === 'codenexus199@gmail.com';
-  } catch (error) {
-    return false;
+export default function CoursesPage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isInstructor, setIsInstructor] = useState(false);
+
+  useEffect(() => {
+    async function fetchCourses() {
+      if (firestore) {
+        setLoading(true);
+        const fetchedCourses = await getCoursesClient(firestore);
+        setCourses(fetchedCourses);
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, [firestore]);
+
+  useEffect(() => {
+    if (user) {
+      setIsInstructor(user.email === 'codenexus199@gmail.com');
+    }
+  }, [user]);
+
+  if (loading) {
+    // You can return a loading skeleton here if you want
+    return <PageClient courses={[]} isInstructor={isInstructor} />;
   }
-}
-
-export default async function CoursesPage() {
-  const courses = await getCourses();
-  const isInstructor = await getIsInstructor();
 
   return <PageClient courses={courses} isInstructor={isInstructor} />;
 }

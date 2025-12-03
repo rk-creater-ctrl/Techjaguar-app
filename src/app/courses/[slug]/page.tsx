@@ -1,38 +1,98 @@
-'use server';
-import { getCourseBySlug, type Course } from '@/lib/data';
+'use client';
+import { getCourseBySlug as getCourseBySlugServer } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { getAdminDb } from '@/firebase/admin';
 import { cookies } from 'next/headers';
 import { auth } from 'firebase-admin';
 import { CourseDetailClient } from './page-client';
+import { useFirestore, useUser } from '@/firebase';
+import { useEffect, useState } from 'react';
+import type { Course } from '@/lib/data';
+import { collection, getDocs, query, doc } from 'firebase/firestore';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import type { Course as CourseSchema, Lecture as LectureSchema } from '@/lib/schema';
 
-async function getIsInstructor() {
-  try {
-    const sessionCookie = cookies().get('__session')?.value || '';
-    if (!sessionCookie) return false;
-    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
-      sessionCookie,
-      true
-    );
-    return decodedClaims.email === 'codenexus199@gmail.com';
-  } catch (error) {
-    return false;
+const slugify = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+
+
+async function getCourseBySlugClient(
+  slug: string,
+  fetchLectures: boolean = true,
+  firestore: Firestore
+): Promise<Course | undefined> {
+  const coursesRef = collection(firestore, 'courses');
+  const q = query(coursesRef);
+  const querySnapshot = await getDocs(q);
+
+  for (const docRef of querySnapshot.docs) {
+    const data = docRef.data() as CourseSchema;
+    if (slugify(data.title) === slug) {
+      const image = PlaceHolderImages.find((img) => img.id === data.imageId);
+      
+      let lectures: any[] = [];
+      if (fetchLectures) {
+        const lecturesSnapshot = await getDocs(collection(firestore, 'courses', docRef.id, 'lectures'));
+        lectures = lecturesSnapshot.docs.map(lectureDoc => ({
+          ...(lectureDoc.data() as LectureSchema),
+          id: lectureDoc.id,
+        }));
+      }
+
+      return {
+        ...data,
+        id: docRef.id,
+        slug: slugify(data.title),
+        progress: 30,
+        imageUrl: image?.imageUrl,
+        imageHint: image?.imageHint,
+        lectures: lectures.sort((a,b) => a.title.localeCompare(b.title)),
+      };
+    }
   }
-}
 
-export default async function CourseDetailPage({
+  return undefined;
+};
+
+
+export default function CourseDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const firestore = getAdminDb();
-  const course = await getCourseBySlug(params.slug, true, firestore);
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isInstructor, setIsInstructor] = useState(false);
 
-  if (!course) {
-    notFound();
+  useEffect(() => {
+    async function fetchCourse() {
+      if (firestore) {
+        setLoading(true);
+        const fetchedCourse = await getCourseBySlugClient(params.slug, true, firestore);
+        if (!fetchedCourse) {
+          notFound();
+        }
+        setCourse(fetchedCourse);
+        setLoading(false);
+      }
+    }
+    fetchCourse();
+  }, [firestore, params.slug]);
+
+  useEffect(() => {
+    if (user) {
+      setIsInstructor(user.email === 'codenexus199@gmail.com');
+    }
+  }, [user]);
+
+  if (loading || !course) {
+    return <div>Loading...</div>; // Or a proper skeleton loader
   }
-
-  const isInstructor = await getIsInstructor();
 
   return <CourseDetailClient course={course} isInstructor={isInstructor} />;
 }
