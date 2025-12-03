@@ -13,8 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { z } from 'zod';
-import { getTechjaguarChatResponse } from '@/ai/flows/techjaguar-chat-flow';
+import { getChatbotResponseAction, type FormState } from '@/app/chatbot/actions';
 import Link from 'next/link';
 
 interface Message {
@@ -35,52 +34,6 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const schema = z.object({
-  message: z.string().min(1, 'Message cannot be empty.'),
-});
-
-export type FormState = {
-  response: string;
-  error: string;
-};
-
-const initialState: FormState = {
-  response: '',
-  error: '',
-};
-
-export async function getChatbotResponseAction(
-  prevState: FormState,
-  formData: FormData
-): Promise<FormState> {
-  const validatedFields = schema.safeParse({
-    message: formData.get('message'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      response: '',
-      error: 'Invalid input. Please enter a message.',
-    };
-  }
-
-  try {
-    const result = await getTechjaguarChatResponse({
-      message: validatedFields.data.message,
-    });
-    return {
-      response: result.response,
-      error: '',
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      response: '',
-      error: 'Failed to get a response from the assistant.',
-    };
-  }
-}
-
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -99,7 +52,7 @@ export function ChatbotWidget() {
   ]);
   const [state, formAction] = useActionState(
     getChatbotResponseAction,
-    initialState
+    { response: '', error: ''}
   );
   const formRef = useRef<HTMLFormElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
