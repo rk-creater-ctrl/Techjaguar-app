@@ -108,7 +108,7 @@ export function ChatbotWidget() {
         rel="noopener noreferrer"
       >
         <Button
-          className="h-16 w-16 rounded-full shadow-lg bg-green-500 hover:bg-green-600 text-white"
+          className="h-16 w-16 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white"
           size="icon"
         >
           <WhatsAppIcon className="h-8 w-8" />
