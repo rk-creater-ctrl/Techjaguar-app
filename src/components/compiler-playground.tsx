@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState, useEffect } from 'react';
+import { useState, useActionState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,6 +56,20 @@ const languageDisplayNames: Record<Language, string> = {
   mysql: 'MySQL',
 };
 
+// Debounce hook
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 
 export function CompilerPlayground() {
   const [code, setCode] = useState<Record<Language, string>>(languageTemplates);
@@ -66,6 +80,48 @@ export function CompilerPlayground() {
     executeCodeAction,
     { message: '' }
   );
+
+  const debouncedJsCode = useDebounce(code.javascript, 500);
+
+  const runJsCode = useCallback((jsCode: string) => {
+    let capturedOutput = '';
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = (...args) => {
+      capturedOutput += args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch (e) {
+            return 'Unserializable Object';
+          }
+        }
+        return String(arg);
+      }).join(' ') + '\\n';
+    };
+    
+    console.error = (...args) => {
+        capturedOutput += `Error: ${args.join(' ')}\n`;
+    };
+
+    try {
+      new Function(jsCode)();
+      setOutput(capturedOutput || 'Code executed successfully, but produced no output.');
+    } catch (error: any) {
+      setOutput(`Error: ${error.message}`);
+    } finally {
+      console.log = originalLog;
+      console.error = originalError;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'javascript') {
+      runJsCode(debouncedJsCode);
+    }
+  }, [debouncedJsCode, activeTab, runJsCode]);
+
 
   const handleCodeChange = (value: string) => {
     setCode((prev) => ({ ...prev, [activeTab]: value }));
@@ -83,32 +139,8 @@ export function CompilerPlayground() {
      setOutput('Running code...');
 
     if (activeTab === 'javascript') {
-      let capturedOutput = '';
-      const originalLog = console.log;
-      
-      console.log = (...args) => {
-        capturedOutput += args.map(arg => {
-          if (typeof arg === 'object' && arg !== null) {
-            try {
-              return JSON.stringify(arg, null, 2);
-            } catch (e) {
-              return 'Unserializable Object';
-            }
-          }
-          return String(arg);
-        }).join(' ') + '\\n';
-      };
-
-      try {
-        new Function(code.javascript)();
-        setOutput(capturedOutput || 'Code executed successfully, but produced no output.');
-      } catch (error: any) {
-        setOutput(`Error: ${error.message}`);
-      } finally {
-        console.log = originalLog;
-      }
+      runJsCode(code.javascript);
     } else {
-      // For other languages, use the server action
       formAction(formData);
     }
   };
@@ -116,7 +148,13 @@ export function CompilerPlayground() {
   return (
     <Tabs
       defaultValue="javascript"
-      onValueChange={(value) => setActiveTab(value as Language)}
+      onValueChange={(value) => {
+        const newTab = value as Language;
+        setActiveTab(newTab);
+        if (newTab !== 'javascript') {
+            setOutput('Output will appear here...');
+        }
+      }}
       className="w-full"
     >
       <form action={handleRun}>
@@ -131,14 +169,16 @@ export function CompilerPlayground() {
                 </TabsTrigger>
             ))}
             </TabsList>
-            <Button type="submit" disabled={isPending}>
-            {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <Play className="mr-2 h-4 w-4" />
+            {activeTab !== 'javascript' && (
+                <Button type="submit" disabled={isPending}>
+                {isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Play className="mr-2 h-4 w-4" />
+                )}
+                Run Code
+                </Button>
             )}
-            Run Code
-            </Button>
         </div>
       </form>
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -161,7 +201,7 @@ export function CompilerPlayground() {
             </CardHeader>
             <CardContent>
               <pre className="text-sm bg-muted/50 p-4 rounded-md h-[calc(40vh-72px)] overflow-auto whitespace-pre-wrap">
-                {output}
+                {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : output}
               </pre>
             </CardContent>
           </Card>

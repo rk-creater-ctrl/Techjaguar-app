@@ -29,7 +29,7 @@ export default function PlaygroundPage() {
         <CardHeader>
           <CardTitle className="font-headline">Live Compiler</CardTitle>
           <CardDescription>
-            Select a language, write your code, and see the output. Code execution is not enabled yet.
+            Select a language, write your code, and see the output. JavaScript runs live as you type.
           </CardDescription>
         </CardHeader>
         <CardContent>
