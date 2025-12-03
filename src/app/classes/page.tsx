@@ -1,9 +1,6 @@
 'use client';
-import { getAdminDb } from '@/firebase/admin';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { RecordedClass } from '@/lib/schema';
-import { cookies } from 'next/headers';
-import { auth } from 'firebase-admin';
 import { ClassesPageClient } from './page-client';
 import { useFirestore, useUser } from '@/firebase';
 import { useEffect, useState } from 'react';

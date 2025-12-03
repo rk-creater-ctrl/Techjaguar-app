@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/card';
 import { CreateClassForm } from '@/app/classes/new/create-class-form';
 import { notFound } from 'next/navigation';
-import { getAdminDb } from '@/firebase/admin';
 import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,7 +15,7 @@ import { RecordedClass } from '@/lib/schema';
 import { Loader2 } from 'lucide-react';
 
 
-export default async function EditClassPage({
+export default function EditClassPage({
   params,
 }: {
   params: { id: string };
@@ -53,6 +52,10 @@ export default async function EditClassPage({
     );
   }
 
+  if (!classItem) {
+    return notFound();
+  }
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -64,7 +67,7 @@ export default async function EditClassPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CreateClassForm classItem={classItem!} />
+            <CreateClassForm classItem={classItem} />
           </CardContent>
         </Card>
       </div>

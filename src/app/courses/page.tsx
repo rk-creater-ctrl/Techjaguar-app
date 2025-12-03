@@ -1,8 +1,5 @@
 'use client';
 import { getCoursesClient } from '@/lib/client-data';
-import { getAdminDb } from '@/firebase/admin';
-import { auth } from 'firebase-admin';
-import { cookies } from 'next/headers';
 import { PageClient } from './page-client';
 import { useFirestore, useUser } from '@/firebase';
 import { useEffect, useState } from 'react';

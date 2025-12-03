@@ -1,14 +1,10 @@
 'use client';
-import { getCourseBySlug as getCourseBySlugServer } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import { getAdminDb } from '@/firebase/admin';
-import { cookies } from 'next/headers';
-import { auth } from 'firebase-admin';
 import { CourseDetailClient } from './page-client';
 import { useFirestore, useUser } from '@/firebase';
 import { useEffect, useState } from 'react';
 import type { Course } from '@/lib/data';
-import { collection, getDocs, query, doc } from 'firebase/firestore';
+import { collection, getDocs, query, doc, Firestore } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Course as CourseSchema, Lecture as LectureSchema } from '@/lib/schema';
 
@@ -42,10 +38,13 @@ async function getCourseBySlugClient(
         }));
       }
 
+      const author = data.author || 'TBD';
+
       return {
         ...data,
         id: docRef.id,
         slug: slugify(data.title),
+        author,
         progress: 30,
         imageUrl: image?.imageUrl,
         imageHint: image?.imageHint,
