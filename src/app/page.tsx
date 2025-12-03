@@ -1,36 +1,37 @@
-'use server';
-import { getCourses, type Course } from '@/lib/data';
-import { cookies } from 'next/headers';
-import { auth } from 'firebase-admin';
+'use client';
 import { PageClient } from './page-client';
-import { getAdminDb } from '@/firebase/admin';
+import { useFirestore, useUser } from '@/firebase';
+import { useEffect, useState } from 'react';
+import { getCoursesClient } from '@/lib/client-data';
+import type { Course } from '@/lib/data';
 
-async function getUserSession() {
-  try {
-    const sessionCookie = cookies().get('__session')?.value || '';
-    if (!sessionCookie) return null;
-    const decodedClaims = await auth(getAdminDb().app).verifySessionCookie(
-      sessionCookie,
-      true
-    );
-    return decodedClaims;
-  } catch (error) {
-    // Session cookie is invalid or expired.
-    // This is an expected condition during normal app use.
-    // For example, after a user signs out.
-    // console.error('Error verifying session cookie:', error);
-    return null;
-  }
-}
+export default function Dashboard() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function Dashboard() {
-  const firestore = getAdminDb();
-  const courses = await getCourses(firestore);
-  const session = await getUserSession();
+  useEffect(() => {
+    async function fetchCourses() {
+      if (firestore) {
+        setLoading(true);
+        const fetchedCourses = await getCoursesClient(firestore);
+        setCourses(fetchedCourses);
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, [firestore]);
 
-  const user = session
-    ? { displayName: session.name, email: session.email }
+
+  const clientUser = user
+    ? { displayName: user.displayName || undefined, email: user.email || undefined }
     : null;
+    
+  if (loading) {
+      // You can return a loading skeleton here if you want
+      return <PageClient courses={[]} user={clientUser} />;
+  }
 
-  return <PageClient courses={courses} user={user} />;
+  return <PageClient courses={courses} user={clientUser} />;
 }

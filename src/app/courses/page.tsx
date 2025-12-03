@@ -20,8 +20,7 @@ async function getIsInstructor() {
 }
 
 export default async function CoursesPage() {
-  const firestore = getAdminDb();
-  const courses = await getCourses(firestore);
+  const courses = await getCourses();
   const isInstructor = await getIsInstructor();
 
   return <PageClient courses={courses} isInstructor={isInstructor} />;

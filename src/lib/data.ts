@@ -34,14 +34,13 @@ const slugify = (title: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 
-const getDb = (db?: Firestore) => {
-    // For server-side rendering and data fetching, always use the Admin DB.
-    // A client-side Firestore instance can be passed for client-only operations if needed.
-    return db || getAdminDb();
+const getDb = () => {
+    // This function now exclusively uses the Admin DB for server-side operations.
+    return getAdminDb();
 }
 
-export const getCourses = async (db?: Firestore): Promise<Course[]> => {
-  const firestore = getDb(db);
+export const getCourses = async (): Promise<Course[]> => {
+  const firestore = getDb();
   const coursesCol = collection(firestore, 'courses');
   const courseSnapshot = await getDocs(coursesCol);
   const courseList = courseSnapshot.docs.map((doc) => {
@@ -64,9 +63,8 @@ export const getCourses = async (db?: Firestore): Promise<Course[]> => {
 export const getCourseBySlug = async (
   slug: string,
   fetchLectures: boolean = true,
-  db?: Firestore
 ): Promise<Course | undefined> => {
-   const firestore = getDb(db);
+   const firestore = getDb();
   const coursesRef = collection(firestore, 'courses');
   const q = query(coursesRef);
   const querySnapshot = await getDocs(q);
@@ -111,10 +109,9 @@ export const getSubscriptionByUserId = async (
 
 
 export const getClassById = async (
-  classId: string,
-  db?: Firestore
+  classId: string
 ): Promise<(RecordedClassSchema & { id: string }) | undefined> => {
-   const firestore = getDb(db);
+   const firestore = getDb();
   const classRef = doc(firestore, 'classes', classId);
   const docSnap = await getDoc(classRef);
 
